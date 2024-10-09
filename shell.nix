@@ -4,6 +4,7 @@ pkgs.mkShellNoCC {
 
     nativeBuildInputs = with pkgs.buildPackages; [
         python312
+        sqlite
     ];
 
     shellHook = ''
