@@ -1,5 +1,5 @@
-import discord, csv, sqlite3, re
-
+import discord, csv, re
+from database import init_database
 
 # Constants
 COMMANDS = {
@@ -14,6 +14,8 @@ CHANNEL_COMMANDS = {
 }
 
 PREFIX = re.compile(r"^TM?(.+)$", re.IGNORECASE)
+
+DATABASE_PATH = "../database/temmie.db"
 
 
 # Basic functions
@@ -65,6 +67,8 @@ def main():
     intents.message_content = True
 
     client = discord.Client(intents=intents)
+
+    connection, cursor = init_database()
 
     @client.event
     async def on_message(message: discord.Message):
