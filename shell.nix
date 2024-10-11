@@ -3,7 +3,7 @@ pkgs.mkShellNoCC {
     name = "Temmie's dev env";
 
     nativeBuildInputs = with pkgs.buildPackages; [
-        python312
+        python3
         sqlite
     ];
 
