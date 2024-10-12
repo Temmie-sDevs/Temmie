@@ -1,7 +1,7 @@
 import sqlite3
 
-def init_database():
-    database_connection = sqlite3.connect(DATABASE_PATH)
+def init_database(db_path):
+    database_connection = sqlite3.connect(db_path)
     database_cursor = database_connection.cursor()
 
     database_cursor.execute("""
@@ -19,6 +19,9 @@ def init_database():
     database_connection.commit()
 
     return database_connection, database_cursor
+
+def close_database(connection):
+    connection.close()
 
 def add_channel(cursor, channel_id):
     cursor.execute("INSERT INTO channels (channel_id) VALUES (?)", (channel_id,))
