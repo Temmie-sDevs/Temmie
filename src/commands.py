@@ -1,5 +1,6 @@
 import discord, csv, re
-from database import init_database
+from database import init_database, close_database
+import asyncio
 
 # Constants
 COMMANDS = {
@@ -16,6 +17,8 @@ CHANNEL_COMMANDS = {
 PREFIX = re.compile(r"^TM?(.+)$", re.IGNORECASE)
 
 DATABASE_PATH = "../database/temmie.db"
+
+CONNECTION = None
 
 
 # Basic functions
@@ -59,6 +62,25 @@ async def handle_help(message, commands):
             embed.add_field(name="Error", value=f"Command {commands[1]} not found", inline=False)
     await send_message(message.channel, embed=embed)
 
+async def handle_sheet(message):
+    if (message.type == discord.MessageType.reply):
+        await send_message(message.channel, f"Not yet implemented, <@{message.reference.resolved.author.mention}>!")
+    else:
+        await send_message(message.channel, "Please reply to a message with a spreadsheet")
+
+async def handle_message(message):
+    found_prefix = PREFIX.search(message.content)
+
+    if found_prefix:
+        commands = found_prefix.group(1).split(" ")
+        match commands[0].lower():
+            case "ping":
+                await handle_ping(message)
+            case "help":
+                await handle_help(message, commands)
+            case "sheet":
+                await handle_sheet(message)
+
 
 # Main
 def main():
@@ -68,30 +90,28 @@ def main():
 
     client = discord.Client(intents=intents)
 
-    connection, cursor = init_database()
+    CONNECTION, cursor = init_database(DATABASE_PATH)
 
     @client.event
     async def on_message(message: discord.Message):
         if message.author == client.user:
             return
-
-        result = PREFIX.search(message.content)
-        if result:
-            commands = result.group(1).split(" ")
-            match commands[0].lower():
-                case "ping":
-                    await handle_ping(message)
-                case "help":
-                    await handle_help(message, commands)
+        await handle_message(message)
 
     @client.event
     async def on_ready():
         print(f'{client.user} is connected to the following guild:\n')
         for guild in client.guilds:
             print(f'{guild.name} (id: {guild.id})')
-    
+
     client.run(load_token())
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        if CONNECTION:
+            close_database(CONNECTION)
+        print(f"Error: {e}")
+        print("Exiting...")
