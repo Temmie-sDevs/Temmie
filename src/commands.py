@@ -1,4 +1,4 @@
-import discord, csv, re
+import discord, csv, re, os
 from database import init_database, close_database
 import asyncio
 
@@ -36,8 +36,12 @@ def sort_cards(cards, key):
     return cards
 
 def load_token():
-    with open("../.token", "r") as f:
-        return f.read().split("\n")[0]
+    if os.path.exists("../.token"):
+        with open("../.token", "r") as f:
+            return f.read().split("\n")[0]
+    else:
+        print("Token file not found")
+        return None
 
 
 # Async functions
@@ -104,7 +108,12 @@ def main():
         for guild in client.guilds:
             print(f'{guild.name} (id: {guild.id})')
 
-    client.run(load_token())
+    token = load_token()
+    if token:
+        client.run(token)
+    else:
+        raise FileNotFoundError("Token file not found")
+
 
 
 if __name__ == "__main__":
