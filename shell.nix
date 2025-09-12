@@ -1,16 +1,16 @@
 { pkgs ? import <nixpkgs> {} }:
-pkgs.mkShellNoCC {
-    name = "Temmie's dev env";
 
-    nativeBuildInputs = with pkgs.buildPackages; [
-        python312
-        sqlite
-    ];
+pkgs.mkShell {
+  name = "temmie-dev-env";
 
-    shellHook = ''
-        python3 -m venv .env
-        source .env/bin/activate
-        pip install --upgrade pip
-        pip install discord
-    '';
+  buildInputs = [
+    (pkgs.python312.withPackages (ps: with ps; [
+      discordpy
+    ]))
+    pkgs.sqlite
+  ];
+
+  shellHook = ''
+    echo "Welcome to Temmie's dev env!"
+  '';
 }
