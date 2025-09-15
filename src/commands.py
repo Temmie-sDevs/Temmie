@@ -1,4 +1,4 @@
-import discord, re
+import discord, re, aiohttp
 from database import init_database, close_database
 
 # Constants
@@ -20,6 +20,14 @@ PREFIX = re.compile(r"^TM?(.+)$", re.IGNORECASE)
 async def send_message(channel, message="", embed=None):
     await channel.send(message, embed=embed)
 
+async def read_online_spreadsheet(url) -> list[str]:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            if resp.status == 200:
+                return (await resp.text()).split("\n")
+            else:
+                raise Exception(f"Failed to download file: {resp.status}")
+
 
 # Handlers
 async def handle_ping(message):
@@ -40,9 +48,22 @@ async def handle_help(message, commands):
 
 async def handle_sheet(message):
     if (message.type == discord.MessageType.reply):
-        await send_message(message.channel, f"Not yet implemented, <@{message.reference.resolved.author.mention}>!")
-    else:
-        await send_message(message.channel, "Please reply to a message with a spreadsheet")
+        replied_msg = await message.channel.fetch_message(message.reference.message_id)
+        if replied_msg.author.id == 646937666251915264 and replied_msg.embeds:
+            if replied_msg.embeds[0].title == "Collection Spreadsheet":
+                description = replied_msg.embeds[0].description
+                spreadsheet_owner = description.split(",")[0].strip()
+                print(f"Spreadsheet owner: {spreadsheet_owner}")
+                if "https://" in description:
+                    link = description.split("(")[1].split(")")[0]
+                    csv = await read_online_spreadsheet(link)
+                    print(csv[0]) # Print the header of the CSV
+                    await send_message(message.channel, f"Spreadsheet downloaded successfully.")
+                    return
+                else:
+                    await send_message(message.channel, "Could not find the link to the spreadsheet.")
+                    return
+    await send_message(message.channel, "This is not a spreadsheet message (do ksheet to generate one)")
 
 async def handle_message(message):
     found_prefix = PREFIX.search(message.content)
