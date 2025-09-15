@@ -1,5 +1,6 @@
-import discord, re, aiohttp
+import discord, re
 from database import init_database, close_database
+from utils import read_online_spreadsheet
 
 # Constants
 COMMANDS = {
@@ -20,14 +21,6 @@ PREFIX = re.compile(r"^TM?(.+)$", re.IGNORECASE)
 # Async functions
 async def send_message(channel, message="", embed=None):
     await channel.send(message, embed=embed)
-
-async def read_online_spreadsheet(url) -> list[str]:
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            if resp.status == 200:
-                return (await resp.text()).split("\n")
-            else:
-                raise Exception(f"Failed to download file: {resp.status}")
 
 
 # Handlers
@@ -58,7 +51,8 @@ async def handle_sheet(message):
                 if "https://" in description:
                     link = description.split("(")[1].split(")")[0]
                     csv = await read_online_spreadsheet(link)
-                    print(csv[0]) # Print the header of the CSV
+                    for line in csv:
+                        print(line)
                     await send_message(message.channel, f"Spreadsheet downloaded successfully.")
                     return
                 else:

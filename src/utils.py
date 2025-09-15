@@ -1,19 +1,18 @@
 #coding:utf-8
 
-import os, csv
+import os, csv, aiohttp
 
 
 DATABASE_PATH = "../database/temmie.db"
 CONNECTION = None
 
 
-def compute_csv(file):
-    with open(file, newline='') as csvfile:
-        spamreader = csv.reader(csvfile, dialect='excel')
-        header = next(spamreader)
-        cards = []
-        for row in spamreader:
-            cards.append({header[i]: row[i] for i in range(len(row))})
+def compute_csv(csv_text) -> list[dict]:
+    spamreader = csv.reader(csv_text.splitlines(), dialect='excel')
+    header = next(spamreader)
+    cards = []
+    for row in spamreader:
+        cards.append({header[i]: row[i] for i in range(len(row))})
     return cards
 
 def sort_cards(cards, key):
@@ -27,3 +26,11 @@ def load_token():
     else:
         print("Token file not found")
         return None
+    
+async def read_online_spreadsheet(url) -> list[dict]:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            if resp.status == 200:
+                return compute_csv(await resp.text())
+            else:
+                raise Exception(f"Failed to download file: {resp.status}")
