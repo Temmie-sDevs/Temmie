@@ -6,6 +6,7 @@ COMMANDS = {
     "ping": ["Send a ping pong message to check the connection of the bot"],
     "help": ["Display a help message"],
     "channel": ["Set the channel where Temmie will be allowed to send messages"],
+    "sheet": ["Download and read a spreadsheet from a karuta spreadsheet message"],
 }
 
 CHANNEL_COMMANDS = {
