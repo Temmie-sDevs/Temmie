@@ -40,11 +40,11 @@ async def handle_help(message, commands):
         for command in COMMANDS:
             embed.add_field(name=command, value=COMMANDS[command][0], inline=False)
     else:
-        embed = discord.Embed(title="Help", description=f"Help for command {commands[1]}", color=0x00ff00)
+        embed = discord.Embed(title="Help", description=f"Help for command `{commands[1]}`", color=0x00ff00)
         if commands[1].lower() in COMMANDS:
             embed.add_field(name=commands[1], value=COMMANDS[commands[1].lower()][0], inline=False)
         else:
-            embed.add_field(name="Error", value=f"Command {commands[1]} not found", inline=False)
+            embed.add_field(name="Error", value=f"Command `{commands[1]}` not found", inline=False)
     await send_message(message.channel, embed=embed)
 
 async def handle_sheet(message):
