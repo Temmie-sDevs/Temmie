@@ -16,6 +16,50 @@ def init_database(db_path):
         );
     """)
 
+    database_cursor.execute("""
+        CREATE TABLE IF NOT EXISTS series (
+            series_name TEXT PRIMARY KEY
+        )
+    """)
+    
+    database_cursor.execute("""
+        CREATE TABLE IF NOT EXISTS series_alias (
+            alias_name TEXT PRIMARY KEY,
+            series_name TEXT NOT NULL,
+            FOREIGN KEY (series_name) REFERENCES series (series_name)
+        )
+    """)
+    
+    database_cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY,
+            username TEXT NOT NULL UNIQUE
+        )
+    """)
+    
+    database_cursor.execute("""
+        CREATE TABLE IF NOT EXISTS liked (
+            user_id INTEGER NOT NULL,
+            series_name TEXT NOT NULL,
+            PRIMARY KEY (user_id, series_name),
+            FOREIGN KEY (user_id) REFERENCES users (user_id),
+            FOREIGN KEY (series_name) REFERENCES series (series_name)
+        )
+    """)
+    
+    database_cursor.execute("""
+        CREATE TABLE IF NOT EXISTS cards (
+            card_code INTEGER PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            card_number INTEGER NOT NULL,
+            card_edition INTEGER NOT NULL,
+            card_character TEXT NOT NULL,
+            card_series TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (user_id),
+            FOREIGN KEY (card_series) REFERENCES series (series_name)
+        )
+    """)
+
     database_connection.commit()
 
     return database_connection, database_cursor
@@ -42,3 +86,15 @@ def add_guild(cursor, guild_id):
 def remove_guild(cursor, guild_id):
     cursor.execute("DELETE FROM guild WHERE guild_id = ?", (guild_id,))
     cursor.connection.commit()
+
+def add_user(cursor, user_id, username):
+    cursor.execute("INSERT OR IGNORE INTO users (user_id, username) VALUES (?, ?)", (user_id, username))
+    cursor.connection.commit()
+
+def remove_user(cursor, user_id):
+    cursor.execute("DELETE FROM users WHERE user_id = ?", (user_id,))
+    cursor.connection.commit()
+
+def get_users_by_name(cursor, username):
+    cursor.execute("SELECT user_id, username FROM users WHERE username LIKE ?", ('%' + username + '%',))
+    return cursor.fetchall()
