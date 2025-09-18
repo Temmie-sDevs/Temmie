@@ -26,7 +26,7 @@ def load_token():
     else:
         print("Token file not found")
         return None
-    
+
 async def read_online_spreadsheet(url) -> list[dict]:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
@@ -34,3 +34,6 @@ async def read_online_spreadsheet(url) -> list[dict]:
                 return compute_csv(await resp.text())
             else:
                 raise Exception(f"Failed to download file: {resp.status}")
+
+def update_collection(user_id, csv: list[dict]):
+    pass

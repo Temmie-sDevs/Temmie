@@ -1,6 +1,6 @@
 import discord, re
 from database import init_database, close_database
-from utils import read_online_spreadsheet
+from utils import read_online_spreadsheet, update_collection
 
 # Constants
 COMMANDS = {
@@ -51,8 +51,8 @@ async def handle_sheet(message):
                 if "https://" in description:
                     link = description.split("(")[1].split(")")[0]
                     csv = await read_online_spreadsheet(link)
-                    for line in csv:
-                        print(line)
+                    update_collection(message.author.id, csv)
+
                     await send_message(message.channel, f"Spreadsheet downloaded successfully.")
                     return
                 else:
