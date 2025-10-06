@@ -3,13 +3,9 @@
 ```mermaid
 
 erDiagram
-    GUILD {
-        INTEGER guild_id PK
-    }
 
     CHANNELS {
         INTEGER channel_id PK
-        INTEGER guild_id FK
     }
 
     SERIES {
@@ -40,7 +36,6 @@ erDiagram
         TEXT card_series FK
     }
 
-    CHANNELS }o--|| GUILD : "belongs to"
     SERIES_ALIAS }o--|| SERIES : "refers to"
     LIKED }o--|| USERS : "liked by"
     LIKED }o--|| SERIES : "likes"
@@ -48,7 +43,7 @@ erDiagram
     CARDS }o--|| SERIES : "from"
 ```
 
-Channels table stores the channels where the bot is active, linked to their respective guilds. Each guild can have multiple channels.  
+Channels table stores the channels where the bot is active.    
 Series table contains the names of different series. Each series can have multiple aliases stored in the Series_Alias table.  
 Users table holds information about users, including their unique IDs and usernames.  
 Liked table tracks which users have liked which series. Each entry is linked to a user and a series.  
