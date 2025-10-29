@@ -4,8 +4,8 @@ import os, csv, aiohttp
 import discord
 from database import Database
 
-
-DATABASE_PATH = "../database/temmie.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE_PATH = os.path.join(BASE_DIR, "..", "database", "temmie.db")
 
 
 def compute_csv(csv_text: str) -> list[dict]:
@@ -21,8 +21,8 @@ def sort_cards(cards: list[dict], key: str) -> list[dict]:
     return cards
 
 def load_token() -> str | None:
-    if os.path.exists("../.token"):
-        with open("../.token", "r") as f:
+    if os.path.exists(os.path.join(BASE_DIR, "..", ".token")):
+        with open(os.path.join(BASE_DIR, "..", ".token"), "r") as f:
             return f.read().split("\n")[0]
     else:
         print("Token file not found")

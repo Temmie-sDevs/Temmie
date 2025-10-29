@@ -6,6 +6,7 @@ from database import Database
 from utils import load_token, DATABASE_PATH
 
 def main():
+    CONNECTION = None # Mandatory to avoid "Error: cannot access local variable 'CONNECTION' where it is not associated with a value"
     try:
         intents = discord.Intents(581068273470528).default() # Intents: 581068273470528
         intents.members = True
