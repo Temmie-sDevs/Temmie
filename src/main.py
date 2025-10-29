@@ -2,7 +2,7 @@
 
 import discord, asyncio
 from commands import handle_message
-from database import Database
+from DAL.database import Database
 from utils import load_token, DATABASE_PATH
 
 def main():

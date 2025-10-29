@@ -1,5 +1,5 @@
 import discord, re
-from database import Database
+from DAL.database import Database
 from utils import read_online_spreadsheet, update_collection, add_channel, remove_channel
 
 # Constants
