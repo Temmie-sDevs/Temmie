@@ -80,17 +80,17 @@ async def handle_channel(db: Database, message: discord.Message, commands: list[
                 case 0:
                     await send_message(message.channel, f"Channel <#{message.channel.id}> added to allowed channels.")
                 case 1:
-                    await send_message(message.channel, f"Channel <#{message.channel.id}> is already an allowed channel.")
-                case 2:
                     await send_message(message.channel, "You need to be an administrator to use this command.")
+                case 2:
+                    await send_message(message.channel, f"Channel <#{message.channel.id}> is already an allowed channel.")
         case "remove":
             match (remove_channel(db, message)):
                 case 0:
                     await send_message(message.channel, f"Channel <#{message.channel.id}> removed from allowed channels.")
                 case 1:
-                    await send_message(message.channel, f"Channel <#{message.channel.id}> is not an allowed channel.")
-                case 2:
                     await send_message(message.channel, "You need to be an administrator to use this command.")
+                case 2:
+                    await send_message(message.channel, f"Channel <#{message.channel.id}> is not an allowed channel.")
         case _:
             await send_message(message.channel, "Unknown channel subcommand.")
 
