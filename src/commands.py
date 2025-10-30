@@ -1,6 +1,7 @@
 import discord, re
 from DAL.database import Database
-from utils import read_online_spreadsheet, update_collection, add_channel, remove_channel
+from utils import read_online_spreadsheet, update_collection
+from Utils.channels import add_channel, remove_channel, ChannelResult
 
 # Constants
 CHANNEL_COMMANDS = {
@@ -74,25 +75,27 @@ async def handle_sheet(db: Database, message: discord.Message):
     await send_message(message.channel, "This is not a spreadsheet message (do ksheet to generate one)")
 
 async def handle_channel(db: Database, message: discord.Message, commands: list[str]):
+    messageToSend = ""
     match commands[1].lower():
         case "add":
             match (add_channel(db, message)):
-                case 0:
-                    await send_message(message.channel, f"Channel <#{message.channel.id}> added to allowed channels.")
-                case 1:
-                    await send_message(message.channel, f"Channel <#{message.channel.id}> is already an allowed channel.")
-                case 2:
-                    await send_message(message.channel, "You need to be an administrator to use this command.")
+                case ChannelResult.SUCCESS:
+                    messageToSend = f"Channel <#{message.channel.id}> added to allowed channels."
+                case ChannelResult.ALREADY_DID:
+                    messageToSend = f"Channel <#{message.channel.id}> is already an allowed channel."
+                case ChannelResult.ADMIN_RIGHTS:
+                    messageToSend = "You need to be an administrator to use this command."
         case "remove":
             match (remove_channel(db, message)):
-                case 0:
-                    await send_message(message.channel, f"Channel <#{message.channel.id}> removed from allowed channels.")
-                case 1:
-                    await send_message(message.channel, f"Channel <#{message.channel.id}> is not an allowed channel.")
-                case 2:
-                    await send_message(message.channel, "You need to be an administrator to use this command.")
+                case ChannelResult.SUCCESS:
+                    messageToSend = f"Channel <#{message.channel.id}> removed from allowed channels."
+                case ChannelResult.ALREADY_DID:
+                    messageToSend = f"Channel <#{message.channel.id}> is not an allowed channel."
+                case ChannelResult.ADMIN_RIGHTS:
+                    messageToSend = "You need to be an administrator to use this command."
         case _:
-            await send_message(message.channel, "Unknown channel subcommand.")
+            messageToSend = "Unknown channel subcommand."
+    await send_message(message.channel, messageToSend)
 
 async def handle_message(db: Database, message: discord.Message):
     

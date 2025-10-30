@@ -1,7 +1,6 @@
 #coding:utf-8
 
 import os, csv, aiohttp
-import discord
 from DAL.database import Database
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,30 +26,6 @@ def load_token() -> str | None:
     else:
         print("Token file not found")
         return None
-
-def add_channel(db: Database, message: discord.Message) -> int:
-    user = message.author
-    if user.guild_permissions.administrator == False:
-        return 1
-
-    channel_id = message.channel.id    
-    if not db.get_channels(channel_id):
-        db.add_channel(channel_id)
-    else:
-        return 2
-    return 0
-
-def remove_channel(db: Database, message: discord.Message) -> int:
-    user = message.author
-    if user.guild_permissions.administrator == False:
-        return 1
-
-    channel_id = message.channel.id
-    if db.get_channels(channel_id):
-        db.remove_channel(channel_id)
-    else:
-        return 2
-    return 0
 
 async def read_online_spreadsheet(url: str) -> list[dict]:
     async with aiohttp.ClientSession() as session:
