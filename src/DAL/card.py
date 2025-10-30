@@ -1,17 +1,19 @@
-class Card:
-    def __init__(self, db_connection):
-        self.database_connection = db_connection
-        self.database_cursor = self.database_connection.database_cursor
+from .table import Table
 
-        self.database_cursor.execute("""
-            CREATE TABLE IF NOT EXISTS cards (
-                card_code INTEGER PRIMARY KEY,
+class Card(Table):
+    def __init__(self, db_connection):
+        super().__init__(db_connection, table_name="card", pk_columns=("code",))
+
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS card (
+                code INTEGER PRIMARY KEY,
                 user_id INTEGER NOT NULL,
-                card_number INTEGER NOT NULL,
-                card_edition INTEGER NOT NULL,
-                card_character TEXT NOT NULL,
-                card_series TEXT NOT NULL,
-                FOREIGN KEY (user_id) REFERENCES users (user_id),
-                FOREIGN KEY (card_series) REFERENCES series (series_name)
+                number INTEGER NOT NULL,
+                edition INTEGER NOT NULL,
+                character TEXT NOT NULL,
+                series TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES user (id),
+                FOREIGN KEY (series) REFERENCES series (name)
             );
         """)
+        self.db.connection.commit()
