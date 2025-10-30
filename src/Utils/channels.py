@@ -14,8 +14,7 @@ class ChannelResult(Enum):
 
 def add_channel(db: Database, message: discord.Message) -> ChannelResult:
     user = message.author
-    logging.info(f"Channel ID: {message.channel.id}")
-    if user.guild_permissions.administrator == True:
+    if user.guild_permissions.administrator == False:
         return ChannelResult.ADMIN_RIGHTS
 
     channel_id = message.channel.id
@@ -26,7 +25,7 @@ def add_channel(db: Database, message: discord.Message) -> ChannelResult:
 
 def remove_channel(db: Database, message: discord.Message) -> ChannelResult:
     user = message.author
-    if user.guild_permissions.administrator == True:
+    if user.guild_permissions.administrator == False:
         return ChannelResult.ADMIN_RIGHTS
 
     channel_id = message.channel.id

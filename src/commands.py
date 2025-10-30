@@ -2,6 +2,7 @@ import discord, re
 from DAL.database import Database
 from utils import read_online_spreadsheet, update_collection
 from Utils.channels import add_channel, remove_channel, ChannelResult
+from Config.const import KARUTA_ID
 
 # Constants
 CHANNEL_COMMANDS = {
@@ -10,7 +11,7 @@ CHANNEL_COMMANDS = {
 }
 
 COMMANDS_HELP = {
-    "<ommands>": ["Give the help message for the specified command"],
+    "<commands>": ["Give the help message for the specified command"],
 }
 
 COMMANDS = {
@@ -57,7 +58,7 @@ async def handle_help(message: discord.Message, commands: list[str]):
 async def handle_sheet(db: Database, message: discord.Message):
     if (message.type == discord.MessageType.reply):
         replied_msg = await message.channel.fetch_message(message.reference.message_id)
-        if replied_msg.author.id == 646937666251915264 and replied_msg.embeds:
+        if replied_msg.author.id == KARUTA_ID and replied_msg.embeds:
             if replied_msg.embeds[0].title == "Collection Spreadsheet":
                 description = replied_msg.embeds[0].description
                 spreadsheet_owner = description.split(",")[0].strip()
@@ -65,14 +66,34 @@ async def handle_sheet(db: Database, message: discord.Message):
                 if "https://" in description:
                     link = description.split("(")[1].split(")")[0]
                     csv = await read_online_spreadsheet(link)
+                    loading_msg  = await send_loading_message(message.channel)
                     update_collection(db, message.author.id, csv)
-
-                    await send_message(message.channel, f"Spreadsheet downloaded successfully.")
+                    await update_to_success(loading_msg, len(csv))
                     return
                 else:
                     await send_message(message.channel, "Could not find the link to the spreadsheet.")
                     return
     await send_message(message.channel, "This is not a spreadsheet message (do ksheet to generate one)")
+
+async def send_loading_message(channel: discord.TextChannel):
+    embed = discord.Embed(
+        title="⏳ Loading all your cards...",
+        description="Please wait while I fetch your Karuta collection.",
+        color=discord.Color.yellow()
+    )
+
+    loading_message = await channel.send(embed=embed)
+    return loading_message
+
+
+async def update_to_success(loading_message: discord.Message, count: int):
+    embed = discord.Embed(
+        title="✅ Cards Loaded!",
+        description=f"Successfully imported **{count}** cards into your collection.",
+        color=discord.Color.green()
+    )
+
+    await loading_message.edit(embed=embed)
 
 async def handle_channel(db: Database, message: discord.Message, commands: list[str]):
     messageToSend = ""

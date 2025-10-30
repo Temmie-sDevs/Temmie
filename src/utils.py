@@ -2,6 +2,9 @@
 
 import os, csv, aiohttp
 from DAL.database import Database
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE_PATH = os.path.join(BASE_DIR, "..", "database", "temmie.db")
@@ -36,4 +39,12 @@ async def read_online_spreadsheet(url: str) -> list[dict]:
                 raise Exception(f"Failed to download file: {resp.status}")
 
 def update_collection(db: Database, user_id: int, csv: list[dict]):
-    pass
+    db.cards.delete(user_id = user_id)
+    columns = ["code", "user_id", "number", "edition", "character", "series", "tag", "wishlists"]
+    for card in csv:
+        filtered_data = {k: card[k] for k in columns if k in card}
+        filtered_data["user_id"] = user_id
+        filtered_data["number"] = int(filtered_data["number"])
+        filtered_data["edition"] = int(filtered_data["edition"])
+        filtered_data["wishlists"] = int(filtered_data["wishlists"])
+        db.cards.insert(filtered_data)

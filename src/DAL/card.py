@@ -6,12 +6,14 @@ class Card(Table):
 
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS card (
-                code INTEGER PRIMARY KEY,
+                code TEXT PRIMARY KEY,
                 user_id INTEGER NOT NULL,
                 number INTEGER NOT NULL,
                 edition INTEGER NOT NULL,
                 character TEXT NOT NULL,
                 series TEXT NOT NULL,
+                tag TEXT NOT NULL,
+                wishlists INTEGER NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES user (id),
                 FOREIGN KEY (series) REFERENCES series (name)
             );
