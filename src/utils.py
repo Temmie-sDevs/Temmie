@@ -3,12 +3,17 @@
 import os, csv, aiohttp
 from DAL.database import Database
 import logging
+import discord
 
 logging.basicConfig(level=logging.INFO)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE_PATH = os.path.join(BASE_DIR, "..", "database", "temmie.db")
 
+
+# Async functions
+async def send_message(channel: discord.TextChannel, message: str = "", embed: discord.Embed = None):
+    await channel.send(message, embed=embed)
 
 def compute_csv(csv_text: str) -> list[dict]:
     spamreader = csv.reader(csv_text.splitlines(), dialect='excel')
@@ -48,3 +53,6 @@ def update_collection(db: Database, user_id: int, csv: list[dict]):
         filtered_data["edition"] = int(filtered_data["edition"])
         filtered_data["wishlists"] = int(filtered_data["wishlists"])
         db.cards.insert(filtered_data)
+        series = filtered_data["series"]
+        if not db.series.get(name=series):
+            db.series.insert({"name": series})

@@ -1,13 +1,18 @@
 import discord, re
 from DAL.database import Database
-from utils import read_online_spreadsheet, update_collection
+from utils import read_online_spreadsheet, update_collection, send_message
 from Utils.channels import add_channel, remove_channel, ChannelResult
+from Utils.lf import add_lf, remove_lf, LFResult, series
 from Config.const import KARUTA_ID
 
 # Constants
 CHANNEL_COMMANDS = {
     "add": ["Add a channel to the list of allowed channels"],
     "remove": ["Remove a channel from the list of allowed channels"],
+}
+LF_COMMANDS = {
+    "add": ["Add a serie to the list of series searched"],
+    "remove": ["Remove a serie from the list of series searched"],
 }
 
 COMMANDS_HELP = {
@@ -19,15 +24,11 @@ COMMANDS = {
     "help": ["Display a help message", COMMANDS_HELP],
     "channel": ["Set the channel where Temmie will be allowed to send messages", CHANNEL_COMMANDS],
     "sheet": ["Download and read a spreadsheet from a karuta spreadsheet message"],
+    "lf": ["Manage the list of series searched", LF_COMMANDS],
 }
 
 
 PREFIX = re.compile(r"^TM?(.+)$", re.IGNORECASE)
-
-
-# Async functions
-async def send_message(channel: discord.TextChannel, message: str = "", embed: discord.Embed = None):
-    await channel.send(message, embed=embed)
 
 
 # Handlers
@@ -118,6 +119,29 @@ async def handle_channel(db: Database, message: discord.Message, commands: list[
             messageToSend = "Unknown channel subcommand."
     await send_message(message.channel, messageToSend)
 
+async def handle_lf(db: Database, message: discord.Message, commands: list[str]):
+    messageToSend = ""
+    if len(commands) == 1:
+        await series(db, message)
+        return
+    serie = " ".join(commands[2:]).strip()
+    match commands[1].lower():
+        case "add":
+            match (add_lf(db, message, serie)):
+                case LFResult.SUCCESS:
+                    messageToSend = f"Serie '{serie}' added to your search."
+                case LFResult.ALREADY_DID:
+                    messageToSend = f"Serie '{serie}' is already in your search."
+        case "remove":
+            match (remove_lf(db, message, serie)):
+                case LFResult.SUCCESS:
+                    messageToSend = f"Serie '{serie}' removed from your search."
+                case LFResult.ALREADY_DID:
+                    messageToSend = f"Serie '{serie}' is not in your search."
+        case _:
+            messageToSend = "Unknown lf subcommand."
+    await send_message(message.channel, messageToSend)
+
 async def handle_message(db: Database, message: discord.Message):
     
     found_prefix = PREFIX.search(message.content)
@@ -136,3 +160,5 @@ async def handle_message(db: Database, message: discord.Message):
                     await handle_help(message, ["help", "channel"])
                     return
                 await handle_channel(db, message, commands)
+            case "lf":
+                await handle_lf(db, message, commands)
