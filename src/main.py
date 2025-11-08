@@ -4,16 +4,13 @@ import discord, asyncio
 from commands import handle_message
 from DAL.database import Database
 from utils import load_token, DATABASE_PATH
-from discord.ext import commands
 
 def main():
     CONNECTION = None # Mandatory to avoid "Error: cannot access local variable 'CONNECTION' where it is not associated with a value"
     try:
-        intents = discord.Intents(581068273470528).default()
+        intents = discord.Intents.default()
         intents.message_content = True
         intents.members = True
-
-        # bot = commands.Bot(command_prefix="tm", intents=intents)
 
         client = discord.Client(intents=intents)
 

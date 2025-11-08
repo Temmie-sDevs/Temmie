@@ -2,7 +2,7 @@ import discord, re
 from DAL.database import Database
 from utils import read_online_spreadsheet, update_collection, send_message
 from Utils.channels import add_channel, remove_channel, ChannelResult
-from Utils.lf import add_lf, remove_lf, LFResult
+from Utils.lf import add_lf, remove_lf, tag_add_lf, tag_remove_lf, list_lf, LFResult
 from Utils.tagalert import tagalert
 from Config.const import KARUTA_ID
 
@@ -11,9 +11,17 @@ CHANNEL_COMMANDS = {
     "add": ["Add a channel to the list of allowed channels"],
     "remove": ["Remove a channel from the list of allowed channels"],
 }
+
+TAG_LF_COMMANDS = {
+    "add": ["Add all series contained in a tag to your search"],
+    "remove": ["Remove all series contained in a tag from your search"],
+}
+
 LF_COMMANDS = {
     "add": ["Add a serie to the list of series searched"],
     "remove": ["Remove a serie from the list of series searched"],
+    "tag": ["Manage the list of series searched via tags", TAG_LF_COMMANDS],
+    "list": ["Lists all series in your search"],
 }
 
 COMMANDS_HELP = {
@@ -123,20 +131,34 @@ async def handle_channel(db: Database, message: discord.Message, commands: list[
 
 async def handle_lf(db: Database, message: discord.Message, commands: list[str]):
     messageToSend = ""
-    serie = " ".join(commands[2:]).strip()
     match commands[1].lower():
         case "add":
+            serie = " ".join(commands[2:]).strip()
             match (add_lf(db, message, serie)):
                 case LFResult.SUCCESS:
                     messageToSend = f"Serie '{serie}' added to your search."
                 case LFResult.ALREADY_DID:
                     messageToSend = f"Serie '{serie}' is already in your search."
         case "remove":
+            serie = " ".join(commands[2:]).strip()
             match (remove_lf(db, message, serie)):
                 case LFResult.SUCCESS:
                     messageToSend = f"Serie '{serie}' removed from your search."
                 case LFResult.ALREADY_DID:
                     messageToSend = f"Serie '{serie}' is not in your search."
+        case "list":
+            messageToSend = list_lf(db, message)
+        case "tag":
+            if len(commands) < 3:
+                await handle_help(message, ["help", "lf", "tag"])
+                return
+            match commands[2].lower():
+                case "add":
+                    messageToSend = tag_add_lf(db, message, commands[3])
+                case "remove":
+                    messageToSend = tag_remove_lf(db, message, commands[3])
+                case _:
+                    messageToSend = "Unknown lf tag subcommand."
         case _:
             messageToSend = "Unknown lf subcommand."
     await send_message(message.channel, messageToSend)
