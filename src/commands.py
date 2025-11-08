@@ -2,7 +2,7 @@ import discord, re
 from DAL.database import Database
 from utils import read_online_spreadsheet, update_collection, send_message
 from Utils.channels import add_channel, remove_channel, ChannelResult
-from Utils.lf import add_lf, remove_lf, tag_add_lf, tag_remove_lf, list_lf, LFResult
+from Utils.lf import add_lf, remove_lf, tags_add_lf, tags_remove_lf, list_lf, LFResult
 from Utils.tagalert import tagalert
 from Config.const import KARUTA_ID
 
@@ -132,7 +132,7 @@ async def handle_channel(db: Database, message: discord.Message, commands: list[
 async def handle_lf(db: Database, message: discord.Message, commands: list[str]):
     messageToSend = ""
     match commands[1].lower():
-        case "add":
+        case "add" | "a":
             if len(commands) < 3:
                 await handle_help(message, ["help", "lf"])
                 return
@@ -142,7 +142,7 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
                     messageToSend = f"Serie '{serie}' added to your search."
                 case LFResult.ALREADY_DID:
                     messageToSend = f"Serie '{serie}' is already in your search."
-        case "remove":
+        case "remove" | "rm" | "r":
             if len(commands) < 3:
                 await handle_help(message, ["help", "lf"])
                 return
@@ -152,17 +152,19 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
                     messageToSend = f"Serie '{serie}' removed from your search."
                 case LFResult.ALREADY_DID:
                     messageToSend = f"Serie '{serie}' is not in your search."
-        case "list":
+        case "list" | "l":
             await list_lf(db, message)
-        case "tag":
+        case "tag" | "t":
             if len(commands) < 4:
                 await handle_help(message, ["help", "lf", "tag"])
                 return
+            tags_input = " ".join(commands[3:])
+            tags = [tag.strip() for tag in tags_input.split(",") if tag.strip()]
             match commands[2].lower():
-                case "add":
-                    messageToSend = tag_add_lf(db, message, commands[3])
-                case "remove":
-                    messageToSend = tag_remove_lf(db, message, commands[3])
+                case "add" | "a":
+                    messageToSend = tags_add_lf(db, message, tags)
+                case "remove" | "rm" | "r":
+                    messageToSend = tags_remove_lf(db, message, tags)
                 case _:
                     messageToSend = "Unknown lf tag subcommand."
         case _:

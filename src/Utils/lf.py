@@ -28,31 +28,35 @@ def remove_lf(db: Database, message: discord.Message, serie: str) -> LFResult:
         return LFResult.SUCCESS
     return LFResult.ALREADY_DID
 
-def tag_add_lf(db: Database, message: discord.Message, tag: str) -> str:
+def get_series_tag_lf(db: Database, message: discord.Message, tag: str, add: bool) -> set:
     cards = db.cards.get(user_id=message.author.id, tag=tag)
     series = set()
-    series_added = set()
+    series_added_removed = set()
 
     for card in cards:
         if card["series"] not in series:
             series.add(card["series"])
-            if (add_lf(db, message, card["series"]) == LFResult.SUCCESS):
-                series_added.add(card["series"])
+            if (add):
+                if (add_lf(db, message, card["series"]) == LFResult.SUCCESS):
+                    series_added_removed.add(card["series"])
+            else:
+                if (remove_lf(db, message, card["series"]) == LFResult.SUCCESS):
+                    series_added_removed.add(card["series"])
+    return series_added_removed
+
+def tags_add_lf(db: Database, message: discord.Message, tags: list[str]) -> str:
+    series_added = set()
+    for tag in tags:
+        series_added.update(get_series_tag_lf(db, message, tag, True))
 
     if len(series_added) == 0:
         return 'No series added.'
     return f'{', '.join(list(series_added))} added to your search.'
 
-def tag_remove_lf(db: Database, message: discord.Message, tag: str) -> str:
-    cards = db.cards.get(user_id=message.author.id, tag=tag)
-    series = set()
+def tags_remove_lf(db: Database, message: discord.Message, tags: list[str]) -> str:
     series_removed = set()
-
-    for card in cards:
-        if card["series"] not in series:
-            series.add(card["series"])
-            if (remove_lf(db, message, card["series"]) == LFResult.SUCCESS):
-                series_removed.add(card["series"])
+    for tag in tags:
+        series_removed.update(get_series_tag_lf(db, message, tag, False))
 
     if len(series_removed) == 0:
         return 'No series removed.'
