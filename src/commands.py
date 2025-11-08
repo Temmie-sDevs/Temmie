@@ -3,6 +3,7 @@ from DAL.database import Database
 from utils import read_online_spreadsheet, update_collection, send_message
 from Utils.channels import add_channel, remove_channel, ChannelResult
 from Utils.lf import add_lf, remove_lf, LFResult
+from Utils.tagalert import tagalert
 from Config.const import KARUTA_ID
 
 # Constants
@@ -25,6 +26,7 @@ COMMANDS = {
     "channel": ["Set the channel where Temmie will be allowed to send messages", CHANNEL_COMMANDS],
     "sheet": ["Download and read a spreadsheet from a karuta spreadsheet message"],
     "lf": ["Manage the list of series searched", LF_COMMANDS],
+    "tagalert": ["Alert users looking for a card which is in your tag {tag}"],
 }
 
 
@@ -121,9 +123,6 @@ async def handle_channel(db: Database, message: discord.Message, commands: list[
 
 async def handle_lf(db: Database, message: discord.Message, commands: list[str]):
     messageToSend = ""
-    if len(commands) == 1:
-        await series(db, message)
-        return
     serie = " ".join(commands[2:]).strip()
     match commands[1].lower():
         case "add":
@@ -141,6 +140,10 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
         case _:
             messageToSend = "Unknown lf subcommand."
     await send_message(message.channel, messageToSend)
+
+async def handle_tagalert(db: Database, message: discord.Message, commands: list[str]):
+    tag = commands[1]
+    await send_message(message.channel, tagalert(db, message, tag))
 
 async def handle_message(db: Database, message: discord.Message):
     
@@ -161,4 +164,12 @@ async def handle_message(db: Database, message: discord.Message):
                     return
                 await handle_channel(db, message, commands)
             case "lf":
+                if len(commands) < 2:
+                    await handle_help(message, ["help", "lf"])
+                    return
                 await handle_lf(db, message, commands)
+            case "tagalert" | "ta":
+                if len(commands) < 2:
+                    await handle_help(message, ["help", "tagalert"])
+                    return
+                await handle_tagalert(db, message, commands)
