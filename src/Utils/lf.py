@@ -4,6 +4,7 @@ from enum import Enum, auto
 import discord
 from DAL.database import Database
 import logging
+from Utils.paginator import Paginator
 
 logging.basicConfig(level=logging.INFO)
 
@@ -57,8 +58,12 @@ def tag_remove_lf(db: Database, message: discord.Message, tag: str) -> str:
         return 'No series removed.'
     return f'{', '.join(list(series_removed))} removed from your search.'
 
-def list_lf(db: Database, message: discord.Message) -> str:
+async def list_lf(db: Database, message: discord.Message):
     if not (likeds := db.likeds.get(user_id=message.author.id)):
         return "You have no liked series."
     series = sorted({lf["series_name"] for lf in likeds})
-    return f'**Here are the series you\'re looking for:\n**```{', '.join(series)}```'
+
+    paginator = Paginator(series, title="⭐ Your Liked Series", per_page=10)
+    embed = paginator.get_page_content()
+
+    await message.channel.send(embed=embed, view=paginator)

@@ -13,7 +13,15 @@ DATABASE_PATH = os.path.join(BASE_DIR, "..", "database", "temmie.db")
 
 # Async functions
 async def send_message(channel: discord.TextChannel, message: str = "", embed: discord.Embed = None):
-    await channel.send(message, embed=embed)
+    MAX_LENGTH = 2000
+    if embed is not None:
+        await channel.send(message[:MAX_LENGTH], embed=embed)
+        return
+
+    while len(message) > 0:
+        chunk = message[:MAX_LENGTH]
+        await channel.send(chunk)
+        message = message[MAX_LENGTH:]
 
 def compute_csv(csv_text: str) -> list[dict]:
     spamreader = csv.reader(csv_text.splitlines(), dialect='excel')

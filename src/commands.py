@@ -133,6 +133,9 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
     messageToSend = ""
     match commands[1].lower():
         case "add":
+            if len(commands) < 3:
+                await handle_help(message, ["help", "lf"])
+                return
             serie = " ".join(commands[2:]).strip()
             match (add_lf(db, message, serie)):
                 case LFResult.SUCCESS:
@@ -140,6 +143,9 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
                 case LFResult.ALREADY_DID:
                     messageToSend = f"Serie '{serie}' is already in your search."
         case "remove":
+            if len(commands) < 3:
+                await handle_help(message, ["help", "lf"])
+                return
             serie = " ".join(commands[2:]).strip()
             match (remove_lf(db, message, serie)):
                 case LFResult.SUCCESS:
@@ -147,9 +153,9 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
                 case LFResult.ALREADY_DID:
                     messageToSend = f"Serie '{serie}' is not in your search."
         case "list":
-            messageToSend = list_lf(db, message)
+            await list_lf(db, message)
         case "tag":
-            if len(commands) < 3:
+            if len(commands) < 4:
                 await handle_help(message, ["help", "lf", "tag"])
                 return
             match commands[2].lower():
@@ -161,7 +167,8 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
                     messageToSend = "Unknown lf tag subcommand."
         case _:
             messageToSend = "Unknown lf subcommand."
-    await send_message(message.channel, messageToSend)
+    if messageToSend:
+        await send_message(message.channel, messageToSend)
 
 async def handle_tagalert(db: Database, message: discord.Message, commands: list[str]):
     tag = commands[1]
