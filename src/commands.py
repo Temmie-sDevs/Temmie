@@ -2,7 +2,7 @@ import discord, re
 from DAL.database import Database
 from utils import read_online_spreadsheet, update_collection, send_message
 from Utils.channels import add_channel, remove_channel, ChannelResult
-from Utils.lf import add_lf, remove_lf, LFResult, series
+from Utils.lf import add_lf, remove_lf, LFResult
 from Config.const import KARUTA_ID
 
 # Constants

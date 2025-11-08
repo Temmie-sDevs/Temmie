@@ -9,27 +9,26 @@ from discord.ext import commands
 def main():
     CONNECTION = None # Mandatory to avoid "Error: cannot access local variable 'CONNECTION' where it is not associated with a value"
     try:
-        intents = discord.Intents.default()
+        intents = discord.Intents(581068273470528).default()
         intents.message_content = True
         intents.members = True
 
-        bot = commands.Bot(command_prefix="tm", intents=intents)
+        # bot = commands.Bot(command_prefix="tm", intents=intents)
 
         client = discord.Client(intents=intents)
 
         CONNECTION: Database = Database(DATABASE_PATH)
 
-        @bot.event
+        @client.event
         async def on_message(message: discord.Message):
-            if message.author == bot.user:
+            if message.author == client.user:
                 return
             await handle_message(CONNECTION, message)
-            await bot.process_commands(message)
 
-        @bot.event
+        @client.event
         async def on_ready():
-            print(f"✅ {bot.user} connected to:")
-            for guild in bot.guilds:
+            print(f"✅ {client.user} connected to:")
+            for guild in client.guilds:
                 print(f" - {guild.name} (id: {guild.id})")
 
         token = load_token()
