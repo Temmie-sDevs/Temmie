@@ -153,13 +153,7 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
                 await handle_help(message, ["help", "lf"])
                 return
             serie = " ".join(commands[2:]).strip()
-            match (add_lf(db, message, serie)):
-                case LFResult.SUCCESS:
-                    messageToSend = f"Serie '{serie}' added to your search."
-                case LFResult.ALREADY_DID:
-                    messageToSend = f"Serie '{serie}' is already in your search."
-                case LFResult.MAX_LFS:
-                    messageToSend = f"You reached the maximum of {MAX_LFS} liked series."
+            await add_lf(db, message, serie, True)
         case "remove" | "rm" | "r":
             if len(commands) < 3:
                 await handle_help(message, ["help", "lf"])
@@ -183,9 +177,9 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
             tags = [tag.strip() for tag in tags_input.split(",") if tag.strip()]
             match commands[2].lower():
                 case "add" | "a":
-                    messageToSend = tag_add_lf(db, message, tags)
+                    messageToSend = await tag_add_lf(db, message, tags)
                 case "remove" | "rm" | "r":
-                    messageToSend = tag_remove_lf(db, message, tags)
+                    messageToSend = await tag_remove_lf(db, message, tags)
                 case _:
                     messageToSend = "Unknown lf tag subcommand."
         case "tags":
@@ -212,9 +206,9 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
             
             match commands[2].lower():
                 case "add" | "a":
-                    messageToSend = tags_add_lf(db, message, tags, exclude_tags)
+                    messageToSend = await tags_add_lf(db, message, tags, exclude_tags)
                 case "remove" | "rm" | "r":
-                    messageToSend = tags_remove_lf(db, message, tags, exclude_tags)
+                    messageToSend = await tags_remove_lf(db, message, tags, exclude_tags)
                 case _:
                     messageToSend = "Unknown lf tags subcommand."
             
