@@ -81,7 +81,7 @@ async def get_series_tag_lf(db: Database, message: discord.Message, tag: str, ad
         if card["series"] not in series:
             series.add(card["series"])
             if (add):
-                add_lf_result = add_lf(db, message, card["series"], False)
+                add_lf_result = await add_lf(db, message, card["series"], False)
                 if (add_lf_result == LFResult.SUCCESS):
                     series_added_removed.add(card["series"])
                 elif add_lf_result == LFResult.MAX_LFS:
