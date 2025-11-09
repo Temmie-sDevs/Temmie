@@ -19,6 +19,7 @@ class LFDto:
 async def prepare_text_message(channel: discord.TextChannel, merged: list[LFDto], author_id: str, users_info: dict[int, dict[str, any]]) -> str:
     MAX_LENGTH = 2000
     MAX_DISPLAY = 10
+    message_sent = False
 
     for dto in merged:
         if not dto.users or not dto.cards or author_id in dto.users:
@@ -68,12 +69,20 @@ async def prepare_text_message(channel: discord.TextChannel, merged: list[LFDto]
         if current_chunk:
             chunks.append(", ".join(current_chunk))
 
+        if not chunks:
+            continue
+
+        message_sent = True
+
         # Send messages
         first_chunk = chunks.pop(0)
         await channel.send(f"{header}```\n{first_chunk}\n```{footer_series}")
 
         for chunk in chunks:
             await channel.send(f"```\n{chunk}\n```")
+
+    if not message_sent:
+        await channel.send("No one is looking for your cards.")
 
 async def tagalert(db: Database, message: discord.Message, tag: str) -> str:
     guild_member_ids = {member.id for member in message.guild.members}
