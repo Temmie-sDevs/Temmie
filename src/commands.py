@@ -2,7 +2,7 @@ import discord, re
 from DAL.database import Database
 from utils import read_online_spreadsheet, update_collection, send_message
 from Utils.channels import add_channel, remove_channel, ChannelResult
-from Utils.lf import add_lf, remove_lf, tag_add_lf, tag_remove_lf, tags_add_lf, tags_remove_lf, list_lf, LFResult
+from Utils.lf import add_lf, remove_lf, tag_add_lf, tag_remove_lf, tags_add_lf, tags_remove_lf, list_lf, LFResult, MAX_LFS
 from Utils.tagalert import tagalert
 from Utils.preferences import preferences_mention, PreferencesResult
 from Config.const import KARUTA_ID
@@ -92,7 +92,7 @@ async def handle_sheet(db: Database, message: discord.Message):
                     loading_msg  = await send_loading_message(message.channel)
                     update_collection(db, message.author.id, csv)
                     await update_to_success(loading_msg, len(csv))
-                    if not db.users.get(id=message.author.id):
+                    if not db.users.get(filters={"id": message.author.id}):
                         db.users.insert({"id": message.author.id, "username": message.author.name})
                     return
                 else:
@@ -156,6 +156,8 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
                     messageToSend = f"Serie '{serie}' added to your search."
                 case LFResult.ALREADY_DID:
                     messageToSend = f"Serie '{serie}' is already in your search."
+                case LFResult.MAX_LFS:
+                    messageToSend = f"You reached the maximum of {MAX_LFS} liked series."
         case "remove" | "rm" | "r":
             if len(commands) < 3:
                 await handle_help(message, ["help", "lf"])
@@ -218,7 +220,7 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
 
 async def handle_tagalert(db: Database, message: discord.Message, commands: list[str]):
     tag = commands[1]
-    await send_message(message.channel, tagalert(db, message, tag))
+    await tagalert(db, message, tag)
 
 async def handle_preferences(db: Database, message: discord.Message, commands: list[str]):
     messageToSend = ""

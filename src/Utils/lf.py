@@ -8,14 +8,19 @@ from Utils.paginator import Paginator
 
 logging.basicConfig(level=logging.INFO)
 
+MAX_LFS = 500
+
 class LFResult(Enum):
     SUCCESS = auto()
     ALREADY_DID = auto()
+    MAX_LFS = auto()
 
 def add_lf(db: Database, message: discord.Message, serie: str) -> LFResult:
     user = message.author
-    if not db.likeds.get(user_id=user.id, series_name=serie):
-        if not db.series.get(name=serie):
+    if not db.likeds.get(filters={"user_id":user.id, "series_name":serie}):
+        if db.likeds.count(user_id=user.id) >= MAX_LFS:
+            return LFResult.MAX_LFS
+        if not db.series.get(filters={"name":serie}):
             db.series.insert({"name": serie})
         db.likeds.insert({"user_id": user.id, "series_name": serie})
         return LFResult.SUCCESS
@@ -23,13 +28,13 @@ def add_lf(db: Database, message: discord.Message, serie: str) -> LFResult:
 
 def remove_lf(db: Database, message: discord.Message, serie: str) -> LFResult:
     user = message.author
-    if db.likeds.get(user_id=user.id, series_name=serie):
+    if db.likeds.get(filters={"user_id":user.id, "series_name":serie}):
         db.likeds.delete(user_id=user.id, series_name=serie)
         return LFResult.SUCCESS
     return LFResult.ALREADY_DID
 
 def get_series_tag_lf(db: Database, message: discord.Message, tag: str, add: bool) -> set:
-    cards = db.cards.get(user_id=message.author.id, tag=tag)
+    cards = db.cards.get(filters={"user_id":message.author.id, "tag":tag})
     series = set()
     series_added_removed = set()
 
@@ -70,18 +75,18 @@ def tag_remove_lf(db: Database, message: discord.Message, tags: list[str]) -> st
 
 def tags_add_lf(db: Database, message: discord.Message, tags: list[str], exclude_tags: list[str]) -> str:
     if len(tags) == 0:
-        user_tags = set([user_tag["tag"] for user_tag in db.user_tags.get(user_id=message.author.id)])
+        user_tags = set([user_tag["tag"] for user_tag in db.user_tags.get(filters={"user_id":message.author.id})])
         tags = user_tags - set(exclude_tags)
     return tag_add_lf(db, message, tags)
 
 def tags_remove_lf(db: Database, message: discord.Message, tags: list[str], exclude_tags: list[str]) -> str:
     if len(tags) == 0:
-        user_tags = set([user_tag["tag"] for user_tag in db.user_tags.get(user_id=message.author.id)])
+        user_tags = set([user_tag["tag"] for user_tag in db.user_tags.get(filters={"user_id":message.author.id})])
         tags = user_tags - set(exclude_tags)
     return tag_remove_lf(db, message, tags)
     
 async def list_lf(db: Database, message: discord.Message):
-    if not (likeds := db.likeds.get(user_id=message.author.id)):
+    if not (likeds := db.likeds.get(filters={"user_id":message.author.id})):
         return "You have no liked series."
     series = sorted({lf["series_name"] for lf in likeds})
 

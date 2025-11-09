@@ -62,9 +62,10 @@ def update_collection(db: Database, user_id: int, csv: list[dict]):
         filtered_data["edition"] = int(filtered_data["edition"])
         filtered_data["wishlists"] = int(filtered_data["wishlists"])
         db.cards.insert(filtered_data)
-        tags.add(filtered_data["tag"])
+        if filtered_data["tag"] != "":
+            tags.add(filtered_data["tag"])
         series = filtered_data["series"]
-        if not db.series.get(name=series):
+        if not db.series.get(filters={"name":series}):
             db.series.insert({"name": series})
     db.user_tags.delete(user_id = user_id)
     for tag in tags:

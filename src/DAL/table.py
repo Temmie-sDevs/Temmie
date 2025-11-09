@@ -23,18 +23,29 @@ class Table:
         self.cursor.execute(query, values)
         self.db.connection.commit()
 
-    def get(self, **kwargs):
+    def get(self, filters=None, in_filters=None):
         """
-        kwargs = {column: value} for filtering (optional)
+        filters: exact match {column: value}
+        in_filters: {column: [value1, value2, ...]}
         """
-        if kwargs:
-            where_clause = " AND ".join([f"{col}=?" for col in kwargs.keys()])
-            values = tuple(kwargs.values())
-            query = f"SELECT * FROM {self.table_name} WHERE {where_clause}"
-            self.cursor.execute(query, values)
-        else:
-            query = f"SELECT * FROM {self.table_name}"
-            self.cursor.execute(query)
+        filters = filters or {}
+        in_filters = in_filters or {}
+
+        where_clauses = []
+        values = []
+
+        for col, val in filters.items():
+            where_clauses.append(f"{col}=?")
+            values.append(val)
+
+        for col, val_list in in_filters.items():
+            placeholders = ",".join(["?"] * len(val_list))
+            where_clauses.append(f"{col} IN ({placeholders})")
+            values.extend(val_list)
+
+        where_clause = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+        query = f"SELECT * FROM {self.table_name}{where_clause}"
+        self.cursor.execute(query, tuple(values))
         return self.cursor.fetchall()
     
     def update(self, data: dict, **filters):
@@ -62,3 +73,22 @@ class Table:
 
         self.cursor.execute(query, tuple(values))
         self.db.connection.commit()
+
+    def count(self, **filters) -> int:
+        """
+        Returns the number of rows in the table.
+        
+        Example:
+            count()  -> total rows
+            count(user_id=123)  -> rows matching user_id=123
+        """
+        if filters:
+            where_clause = " AND ".join([f"{col}=?" for col in filters.keys()])
+            values = tuple(filters.values())
+            query = f"SELECT COUNT(*) FROM {self.table_name} WHERE {where_clause}"
+            self.cursor.execute(query, values)
+        else:
+            query = f"SELECT COUNT(*) FROM {self.table_name}"
+            self.cursor.execute(query)
+
+        return self.cursor.fetchone()[0]

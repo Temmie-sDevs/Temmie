@@ -25,7 +25,7 @@ def getBoolValue(value: str) -> BoolValue:
     return BoolValue.NULL
 
 def preferences_mention(db: Database, message: discord.Message, value: str) -> PreferencesResult:
-    currentValueLines = db.users.get(id=message.author.id)
+    currentValueLines = db.users.get(filters={"id":message.author.id})
     if (len(currentValueLines) != 1):
         return PreferencesResult.INVALID
     currentValue = currentValueLines[0]["mention"]

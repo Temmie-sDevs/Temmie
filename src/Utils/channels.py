@@ -18,7 +18,7 @@ def add_channel(db: Database, message: discord.Message) -> ChannelResult:
         return ChannelResult.ADMIN_RIGHTS
 
     channel_id = message.channel.id
-    if not db.channels.get(id=channel_id):
+    if not db.channels.get(filters={"id":channel_id}):
         db.channels.insert({"id":channel_id})
         return ChannelResult.SUCCESS
     return ChannelResult.ALREADY_DID
@@ -29,7 +29,7 @@ def remove_channel(db: Database, message: discord.Message) -> ChannelResult:
         return ChannelResult.ADMIN_RIGHTS
 
     channel_id = message.channel.id
-    if db.channels.get(id=channel_id):
+    if db.channels.get(filters={"id":channel_id}):
         db.channels.delete(id = channel_id)
         return ChannelResult.SUCCESS
     return ChannelResult.ALREADY_DID
