@@ -6,14 +6,16 @@ DATABASE_PATH = os.path.join(BASE_DIR, "..", "database", "temmie.db")
 conn = sqlite3.connect(DATABASE_PATH)
 cursor = conn.cursor()
 
-# Check if the column already exists
-cursor.execute("PRAGMA table_info(user);")
-columns = [col[1] for col in cursor.fetchall()]
-if "mention" not in columns:
-    cursor.execute("ALTER TABLE user ADD COLUMN mention BOOL NOT NULL DEFAULT 1;")
-    print("✅ Column 'mention' added successfully.")
-else:
-    print("ℹ️ Column 'mention' already exists.")
+# --- Ensure 'user_tags' table exists ---
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_tags (
+        user_id INTEGER NOT NULL,
+        tag TEXT NOT NULL,
+        PRIMARY KEY (user_id, tag),
+        FOREIGN KEY (user_id) REFERENCES user (id)
+    );
+""")
+print("✅ Table 'user_tags' ensured.")
 
 conn.commit()
 conn.close()

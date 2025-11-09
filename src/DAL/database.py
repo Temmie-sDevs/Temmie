@@ -4,6 +4,7 @@ from .card import Card
 from .liked import Liked
 from .series import Series
 from .series_alias import SeriesAlias
+from .user_tags import UserTags
 from .user import User
 
 class Database:
@@ -15,6 +16,7 @@ class Database:
         self.series = Series(self.connection)
         self.serieAliases = SeriesAlias(self.connection)
         self.users = User(self.connection)
+        self.user_tags = UserTags(self.connection)
         self.connection.commit_database()
 
     def close_database(self):

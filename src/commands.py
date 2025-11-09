@@ -2,7 +2,7 @@ import discord, re
 from DAL.database import Database
 from utils import read_online_spreadsheet, update_collection, send_message
 from Utils.channels import add_channel, remove_channel, ChannelResult
-from Utils.lf import add_lf, remove_lf, tags_add_lf, tags_remove_lf, list_lf, LFResult
+from Utils.lf import add_lf, remove_lf, tag_add_lf, tag_remove_lf, tags_add_lf, tags_remove_lf, list_lf, LFResult
 from Utils.tagalert import tagalert
 from Utils.preferences import preferences_mention, PreferencesResult
 from Config.const import KARUTA_ID
@@ -18,10 +18,16 @@ TAG_LF_COMMANDS = {
     "remove": ["Remove all series contained in a tag from your search"],
 }
 
+TAGS_LF_COMMANDS = {
+    "add": ["Add all series contained in all tags to your search, except tags after tmlf tags add e:{t1},{t2}, ..."],
+    "remove": ["Remove all series contained in all tags to your search, except tags after tmlf tags remove e:{t1},{t2}, ..."],
+}
+
 LF_COMMANDS = {
     "add": ["Add a serie to the list of series searched"],
     "remove": ["Remove a serie from the list of series searched"],
     "tag": ["Manage the list of series searched via tags", TAG_LF_COMMANDS],
+    "tags": ["Manage the list of series searched via all tags", TAGS_LF_COMMANDS],
     "list": ["Lists all series in your search"],
 }
 
@@ -86,7 +92,8 @@ async def handle_sheet(db: Database, message: discord.Message):
                     loading_msg  = await send_loading_message(message.channel)
                     update_collection(db, message.author.id, csv)
                     await update_to_success(loading_msg, len(csv))
-                    db.users.insert({"id": message.author.id, "username": message.author.name})
+                    if not db.users.get(id=message.author.id):
+                        db.users.insert({"id": message.author.id, "username": message.author.name})
                     return
                 else:
                     await send_message(message.channel, "Could not find the link to the spreadsheet.")
@@ -169,11 +176,41 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
             tags = [tag.strip() for tag in tags_input.split(",") if tag.strip()]
             match commands[2].lower():
                 case "add" | "a":
-                    messageToSend = tags_add_lf(db, message, tags)
+                    messageToSend = tag_add_lf(db, message, tags)
                 case "remove" | "rm" | "r":
-                    messageToSend = tags_remove_lf(db, message, tags)
+                    messageToSend = tag_remove_lf(db, message, tags)
                 case _:
                     messageToSend = "Unknown lf tag subcommand."
+        case "tags":
+            if len(commands) < 3:
+                await handle_help(message, ["help", "lf", "tags"])
+                return
+            
+            raw_args = " ".join(commands[3:]).strip()
+            # Default: no exclusions, all tags
+            tags = set()
+            exclude_tags = set()
+
+            if raw_args:
+                # Split by space, then handle "except:" or "e:"
+                for part in raw_args.split():
+                    part = part.strip()
+                    if part.lower().startswith(("except:", "e:", "e=")):
+                        sep_index = part.find(":") if ":" in part else part.find("=")
+                        values_str = part[sep_index+1:].strip()
+                        exclude_tags.update({v.strip() for v in values_str.split(",") if v.strip()})
+                    else:
+                        tags.update({v.strip() for v in part.split(",") if v.strip()})
+            tags = tags - exclude_tags
+            
+            match commands[2].lower():
+                case "add" | "a":
+                    messageToSend = tags_add_lf(db, message, tags, exclude_tags)
+                case "remove" | "rm" | "r":
+                    messageToSend = tags_remove_lf(db, message, tags, exclude_tags)
+                case _:
+                    messageToSend = "Unknown lf tags subcommand."
+            
         case _:
             messageToSend = "Unknown lf subcommand."
     if messageToSend:
