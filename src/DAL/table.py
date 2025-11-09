@@ -36,3 +36,29 @@ class Table:
             query = f"SELECT * FROM {self.table_name}"
             self.cursor.execute(query)
         return self.cursor.fetchall()
+    
+    def update(self, data: dict, **filters):
+        """
+        Updates one or more rows in the table.
+
+        Example:
+            update({"username": "JohnDoe"}, id=123)
+
+        data: dict -> columns to update
+        filters: dict -> columns to filter on (WHERE)
+        """
+        if not data:
+            raise ValueError("No data provided for update.")
+
+        set_clause = ", ".join([f"{col}=?" for col in data.keys()])
+        values = list(data.values())
+
+        if filters:
+            where_clause = " AND ".join([f"{col}=?" for col in filters.keys()])
+            values.extend(filters.values())
+            query = f"UPDATE {self.table_name} SET {set_clause} WHERE {where_clause}"
+        else:
+            query = f"UPDATE {self.table_name} SET {set_clause}"
+
+        self.cursor.execute(query, tuple(values))
+        self.db.connection.commit()

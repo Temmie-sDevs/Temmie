@@ -7,7 +7,8 @@ class User(Table):
         self.cursor.execute("""
             CREATE TABLE IF NOT EXISTS user (
                 id INTEGER PRIMARY KEY,
-                username TEXT NOT NULL UNIQUE
+                username TEXT NOT NULL UNIQUE,
+                mention BOOL NOT NULL DEFAULT 1
             );
         """)
         self.db.connection.commit()

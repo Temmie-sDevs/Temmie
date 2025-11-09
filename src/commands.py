@@ -4,6 +4,7 @@ from utils import read_online_spreadsheet, update_collection, send_message
 from Utils.channels import add_channel, remove_channel, ChannelResult
 from Utils.lf import add_lf, remove_lf, tags_add_lf, tags_remove_lf, list_lf, LFResult
 from Utils.tagalert import tagalert
+from Utils.preferences import preferences_mention, PreferencesResult
 from Config.const import KARUTA_ID
 
 # Constants
@@ -24,6 +25,10 @@ LF_COMMANDS = {
     "list": ["Lists all series in your search"],
 }
 
+PREFERENCES_COMMANDS = {
+    "mention": ["Authorize the bot to mention yourself or not. Usage: tmpreferences mention (true|false)"],
+}
+
 COMMANDS_HELP = {
     "<commands>": ["Give the help message for the specified command"],
 }
@@ -35,6 +40,7 @@ COMMANDS = {
     "sheet": ["Download and read a spreadsheet from a karuta spreadsheet message"],
     "lf": ["Manage the list of series searched", LF_COMMANDS],
     "tagalert": ["Alert users looking for a card which is in your tag {tag}"],
+    "preferences": ["Manage your preferences", PREFERENCES_COMMANDS],
 }
 
 
@@ -80,6 +86,7 @@ async def handle_sheet(db: Database, message: discord.Message):
                     loading_msg  = await send_loading_message(message.channel)
                     update_collection(db, message.author.id, csv)
                     await update_to_success(loading_msg, len(csv))
+                    db.users.insert({"id": message.author.id, "username": message.author.name})
                     return
                 else:
                     await send_message(message.channel, "Could not find the link to the spreadsheet.")
@@ -176,6 +183,26 @@ async def handle_tagalert(db: Database, message: discord.Message, commands: list
     tag = commands[1]
     await send_message(message.channel, tagalert(db, message, tag))
 
+async def handle_preferences(db: Database, message: discord.Message, commands: list[str]):
+    messageToSend = ""
+    match commands[1].lower():
+        case "mention" | "m":
+            if len(commands) < 3:
+                await handle_help(message, ["help", "preferences", "mention"])
+                return
+            value = commands[2]
+            match (preferences_mention(db, message, value)):
+                case PreferencesResult.SUCCESS:
+                    messageToSend = f"The mention preference has successfully been set to '{value}'."
+                case PreferencesResult.ALREADY_DID:
+                    messageToSend = f"The mention preference is already set to '{value}'."
+                case PreferencesResult.INVALID:
+                    messageToSend = f"The choice is invalid '{value}' or you're not registered in the database. Please ensure you did your tmsheet."
+        case _:
+            messageToSend = "Unknown lf subcommand."
+    if messageToSend:
+        await send_message(message.channel, messageToSend)
+
 async def handle_message(db: Database, message: discord.Message):
     
     found_prefix = PREFIX.search(message.content)
@@ -204,3 +231,8 @@ async def handle_message(db: Database, message: discord.Message):
                     await handle_help(message, ["help", "tagalert"])
                     return
                 await handle_tagalert(db, message, commands)
+            case "preferences" | "p":
+                if len(commands) < 3:
+                    await handle_help(message, ["help", "preferences"])
+                    return
+                await handle_preferences(db, message, commands)
