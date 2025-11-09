@@ -5,6 +5,7 @@ from Utils.channels import add_channel, remove_channel, ChannelResult
 from Utils.lf import add_lf, remove_lf, tag_add_lf, tag_remove_lf, tags_add_lf, tags_remove_lf, list_lf, LFResult, MAX_LFS
 from Utils.tagalert import tagalert
 from Utils.preferences import preferences_mention, PreferencesResult
+from Utils.burnalert import burnalert
 from Config.const import KARUTA_ID
 
 # Constants
@@ -47,6 +48,7 @@ COMMANDS = {
     "lf": ["Manage the list of series searched", LF_COMMANDS],
     "tagalert": ["Alert users looking for a card which is in your tag {tag}"],
     "preferences": ["Manage your preferences", PREFERENCES_COMMANDS],
+    "burnalert": ["Displays cards that shouldn't be burnt from your tag {tag}"],
 }
 
 
@@ -242,6 +244,27 @@ async def handle_preferences(db: Database, message: discord.Message, commands: l
     if messageToSend:
         await send_message(message.channel, messageToSend)
 
+async def handle_burnalert(db: Database, message: discord.Message, commands: list[str]):
+    tag = commands[1]
+    args = {"w": None, "p": None}
+    arg_pattern = re.compile(r"(\w+)\s*[:=]\s*([\w.-]+)")
+    for cmd in commands[2:]:
+        match = arg_pattern.match(cmd)
+        if match:
+            key, value = match.groups()
+            if key == "wl":
+                key = "w"
+            if key in args:
+                try:
+                    args[key] = float(value) if "." in value else int(value)
+                except ValueError:
+                    args[key] = value
+
+    w = args["w"] or 10
+    p = args["p"] or 1000
+
+    await burnalert(db, message, tag, wl_throttle=w, print_throttle=p)
+
 async def handle_message(db: Database, message: discord.Message):
     
     found_prefix = PREFIX.search(message.content)
@@ -275,3 +298,8 @@ async def handle_message(db: Database, message: discord.Message):
                     await handle_help(message, ["help", "preferences"])
                     return
                 await handle_preferences(db, message, commands)
+            case "burnalert" | "ba":
+                if len(commands) < 2:
+                    await handle_help(message, ["help", "burnalert"])
+                    return
+                await handle_burnalert(db, message, commands)
