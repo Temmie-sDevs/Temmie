@@ -171,7 +171,10 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
                 case LFResult.ALREADY_DID:
                     messageToSend = f"Serie '{serie}' is not in your search."
         case "list" | "l":
-            await list_lf(db, message)
+            if len(commands) > 2:
+                await list_lf(db, message, commands[2])
+            else:
+                await list_lf(db, message)
         case "tag" | "t":
             if len(commands) < 4:
                 await handle_help(message, ["help", "lf", "tag"])

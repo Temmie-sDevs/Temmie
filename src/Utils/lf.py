@@ -85,12 +85,49 @@ def tags_remove_lf(db: Database, message: discord.Message, tags: list[str], excl
         tags = user_tags - set(exclude_tags)
     return tag_remove_lf(db, message, tags)
     
-async def list_lf(db: Database, message: discord.Message):
-    if not (likeds := db.likeds.get(filters={"user_id":message.author.id})):
-        return "You have no liked series."
-    series = sorted({lf["series_name"] for lf in likeds})
+async def list_lf(db: Database, message: discord.Message, username: str = ""):
+    guild = message.guild
+    target_user = None
+    
+    if message.mentions:
+        target_user = message.mentions[0]
+    elif username:
+        username = username.strip().lower()
 
-    paginator = Paginator(series, title="⭐ Your Liked Series", per_page=10)
+        # Try exact match (case-insensitive)
+        for member in guild.members:
+            if member.name.lower() == username or member.display_name.lower() == username:
+                target_user = member
+                break
+
+        # If not found, try "starts with"
+        if not target_user:
+            for member in guild.members:
+                if member.name.lower().startswith(username) or member.display_name.lower().startswith(username):
+                    target_user = member
+                    break
+        # If still not found, notify
+        if not target_user:
+            await message.channel.send(f"❌ No user found in this server matching '{username}'.")
+            return
+    else:
+        target_user = message.author
+
+    # Search the user based on the whole username should match with the user name, then if not found, try to find a user starting with username.
+    if not (likeds := db.likeds.get(filters={"user_id": target_user.id})):
+        if target_user.id == message.author.id:
+            await message.channel.send("You have no liked series.")
+        else:
+            await message.channel.send(f"{target_user.display_name} has no liked series.")
+        return
+    
+    series = sorted({lf["series_name"] for lf in likeds})
+    title = ""
+    if target_user.id == message.author.id:
+        title = f"⭐ Your Liked Series"
+    else:
+        title = f"⭐ Liked Series of {target_user.display_name}"
+    paginator = Paginator(series, title=title, per_page=10)
     embed = paginator.get_page_content()
 
     await message.channel.send(embed=embed, view=paginator)
