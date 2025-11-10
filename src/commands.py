@@ -57,7 +57,7 @@ PREFIX = re.compile(r"^TM?(.+)$", re.IGNORECASE)
 
 # Handlers
 async def handle_ping(message: discord.Message):
-    await send_message(message.channel, f"<@!{message.author.id}> Pong!")
+    await send_message(message.channel, f"<:temmie:1437529025831637093> <@!{message.author.id}> Pong!")
 
 async def handle_help(message: discord.Message, commands: list[str]):
     if len(commands) == 1:

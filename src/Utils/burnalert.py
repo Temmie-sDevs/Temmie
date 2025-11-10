@@ -3,8 +3,17 @@
 import discord
 from DAL.database import Database
 import logging
+from utils import send_message
 
 logging.basicConfig(level=logging.INFO)
+
+async def send_chunked_list(channel, title: str, cards: list[str], footer: str):
+    """Send a message in chunks of 200 cards max, keeping the same style."""
+    CHUNK_SIZE = 200
+    for i in range(0, len(cards), CHUNK_SIZE):
+        chunk = cards[i:i+CHUNK_SIZE]
+        text = f"**{title}**\n```{', '.join(chunk)}```{footer}"
+        await send_message(channel, text)
 
 async def burnalert(db: Database, message: discord.Message, tag: str, wl_throttle: int = 10, print_throttle: int = 1000) -> str:
     cards = db.cards.get(filters={"user_id": message.author.id, "tag": tag})
@@ -53,18 +62,29 @@ async def burnalert(db: Database, message: discord.Message, tag: str, wl_throttl
     message_sent = False
     if len(wishlists_list) > 0:
         message_sent = True
-        await message.channel.send(f"**High wishlisted cards**\n```{', '.join(wishlists_list)}```*Total wishlists value: {wishlists_sum}*\n*Average wishlists value: {round(wishlists_sum/len(wishlists_list), 2)}*")
+        avg = round(wishlists_sum / len(wishlists_list), 2)
+        footer = f"*Total wishlists value: {wishlists_sum}*\n*Average wishlists value: {avg}*"
+        await send_chunked_list(message.channel, "High wishlisted cards", wishlists_list, footer)
+
     if len(midprints_list) > 0:
         message_sent = True
-        await message.channel.send(f"**Mid print cards**\n```{', '.join(midprints_list)}```*Average print: {round(midprints_sum/len(midprints_list), 2)}*")
+        avg = round(midprints_sum / len(midprints_list), 2)
+        await send_chunked_list(message.channel, "Mid print cards", midprints_list, f"*Average print: {avg}*")
+
     if len(lowprints_list) > 0:
         message_sent = True
-        await message.channel.send(f"**Low print cards**\n```{', '.join(lowprints_list)}```*Average print: {round(lowprints_sum/len(lowprints_list), 2)}*")
+        avg = round(lowprints_sum / len(lowprints_list), 2)
+        await send_chunked_list(message.channel, "Low print cards", lowprints_list, f"*Average print: {avg}*")
+
     if len(singleprints_list) > 0:
         message_sent = True
-        await message.channel.send(f"**Single print cards**\n```{', '.join(singleprints_list)}```*Average print: {round(singleprints_sum/len(singleprints_list), 2)}*")
+        avg = round(singleprints_sum / len(singleprints_list), 2)
+        await send_chunked_list(message.channel, "Single print cards", singleprints_list, f"*Average print: {avg}*")
+
     if len(firstprints_list) > 0:
         message_sent = True
-        await message.channel.send(f"**First print cards**\n```{', '.join(firstprints_list)}```*Average print: {round(firstprints_sum/len(firstprints_list), 2)}*")
+        avg = round(firstprints_sum / len(firstprints_list), 2)
+        await send_chunked_list(message.channel, "First print cards", firstprints_list, f"*Average print: {avg}*")
+
     if not message_sent:
-        await message.channel.send(f"No card card found for this tag for these parameters")
+        await send_message(message.channel, "No card found for this tag for these parameters")
