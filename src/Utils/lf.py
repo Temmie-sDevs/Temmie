@@ -208,3 +208,49 @@ async def list_lf(db: Database, message: discord.Message, username: str = ""):
     embed = paginator.get_page_content()
 
     await message.channel.send(embed=embed, view=paginator)
+
+async def like_lf(db: Database, message: discord.Message, like_filter: str, add: bool):
+    filter_str = like_filter.strip("%").lower()
+    starts_with = like_filter.endswith("%") and not like_filter.startswith("%")
+    ends_with = like_filter.startswith("%") and not like_filter.endswith("%")
+    contains = like_filter.startswith("%") and like_filter.endswith("%")
+
+    def matches(name: str):
+        name = name.lower()
+        if contains:
+            return filter_str in name
+        elif starts_with:
+            return name.startswith(filter_str)
+        elif ends_with:
+            return name.endswith(filter_str)
+        else:
+            return name == filter_str
+
+    matched = [serie["name"] for serie in db.series.get() if matches(serie["name"])]
+
+    if not matched:
+        await message.channel.send(f"No liked series match `{like_filter}`.")
+        return
+    
+    added_or_removed = set()
+    for match in matched:
+        if add:
+            if await add_lf(db, message, match, False) == LFResult.SUCCESS:
+                added_or_removed.add(match)
+        else:
+            if remove_lf(db, message, match) == LFResult.SUCCESS:
+                added_or_removed.add(match)
+
+    shown = list(added_or_removed)[:20]
+    remaining = len(added_or_removed) - len(shown)
+    verb = "added" if add else "removed"
+
+    message_text = ""
+    if len(added_or_removed) == 0:
+        message_text = "No serie added. You already have all those series!"
+    else:
+        message_text = f"⭐ Series {verb}:\n```{', '.join(shown)}```"
+        if remaining > 0:
+            message_text += f"\n*and {remaining} others...*"
+
+    await message.channel.send(message_text)

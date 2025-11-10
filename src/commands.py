@@ -2,7 +2,7 @@ import discord, re
 from DAL.database import Database
 from utils import read_online_spreadsheet, update_collection, send_message
 from Utils.channels import add_channel, remove_channel, ChannelResult
-from Utils.lf import add_lf, remove_lf, tag_add_lf, tag_remove_lf, tags_add_lf, tags_remove_lf, list_lf, LFResult, MAX_LFS
+from Utils.lf import add_lf, remove_lf, tag_add_lf, tag_remove_lf, tags_add_lf, tags_remove_lf, list_lf, like_lf, LFResult, MAX_LFS
 from Utils.tagalert import tagalert
 from Utils.preferences import preferences_mention, PreferencesResult
 from Utils.burnalert import burnalert
@@ -24,12 +24,18 @@ TAGS_LF_COMMANDS = {
     "remove": ["Remove all series contained in all tags to your search, except tags after tmlf tags remove e:{t1},{t2}, ..."],
 }
 
+LIKE_LF_COMMANDS = {
+    "add": ["Add all series corresponding to the filter you passed. Example: '%attack on titan%' will take every serie containing 'attack on titan'"],
+    "remove": ["Remove all series corresponding to the filter you passed. Example: '%attack on titan%' will remove every serie containing 'attack on titan'"],
+}
+
 LF_COMMANDS = {
     "add": ["Add a serie to the list of series searched"],
     "remove": ["Remove a serie from the list of series searched"],
     "tag": ["Manage the list of series searched via tags", TAG_LF_COMMANDS],
     "tags": ["Manage the list of series searched via all tags", TAGS_LF_COMMANDS],
     "list": ["Lists all series in your search"],
+    "like": ["Manage the list of series searched via tags using like filter", LIKE_LF_COMMANDS],
 }
 
 PREFERENCES_COMMANDS = {
@@ -211,6 +217,17 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
                     messageToSend = await tags_remove_lf(db, message, tags, exclude_tags)
                 case _:
                     messageToSend = "Unknown lf tags subcommand."
+        case "like":
+            if len(commands) < 4:
+                await handle_help(message, ["help", "lf", "like"])
+                return
+            match commands[2].lower():
+                case "add" | "a":
+                    messageToSend = await like_lf(db, message, " ".join(commands[3:]), True)
+                case "remove" | "rm" | "r":
+                    messageToSend = await like_lf(db, message, " ".join(commands[3:]), False)
+                case _:
+                    messageToSend = "Unknown lf tag subcommand."
             
         case _:
             messageToSend = "Unknown lf subcommand."
