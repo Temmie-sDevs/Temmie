@@ -72,31 +72,36 @@ def remove_lf(db: Database, message: discord.Message, serie: str) -> LFResult:
         return LFResult.SUCCESS
     return LFResult.ALREADY_DID
 
-async def get_series_tag_lf(db: Database, message: discord.Message, tag: str, add: bool) -> set:
+async def get_series_tag_lf(db: Database, message: discord.Message, tag: str, add: bool) -> tuple[set, bool]:
     cards = db.cards.get(filters={"user_id":message.author.id, "tag":tag})
     series = set()
     series_added_removed = set()
+    max_reached = False
 
     for card in cards:
-        if card["series"] not in series:
-            series.add(card["series"])
-            if (add):
-                add_lf_result = await add_lf(db, message, card["series"], False)
-                if (add_lf_result == LFResult.SUCCESS):
-                    series_added_removed.add(card["series"])
-                elif add_lf_result == LFResult.MAX_LFS:
-                    await message.channel.send(f"❌ You reached the maximum number of liked series ({MAX_LFS}).")
-                    return series_added_removed
-            else:
-                if (remove_lf(db, message, card["series"]) == LFResult.SUCCESS):
-                    series_added_removed.add(card["series"])
-    return series_added_removed
+        if card["series"] in series:
+            continue
+        series.add(card["series"])
+        if add:
+            add_lf_result = await add_lf(db, message, card["series"], False)
+            if (add_lf_result == LFResult.SUCCESS):
+                series_added_removed.add(card["series"])
+            elif add_lf_result == LFResult.MAX_LFS:
+                max_reached = True
+                await message.channel.send(f"❌ You reached the maximum number of liked series ({MAX_LFS}).")
+                break
+        else:
+            if (remove_lf(db, message, card["series"]) == LFResult.SUCCESS):
+                series_added_removed.add(card["series"])
+    return series_added_removed, max_reached
 
 async def tag_add_lf(db: Database, message: discord.Message, tags: list[str]) -> str:
     series_added = set()
     for tag in tags:
-        series = await get_series_tag_lf(db, message, tag, True)
+        series, max_reached = await get_series_tag_lf(db, message, tag, True)
         series_added.update(series)
+        if max_reached:
+            break
 
     if len(series_added) == 0:
         return 'No series added.'
@@ -119,9 +124,37 @@ async def tag_remove_lf(db: Database, message: discord.Message, tags: list[str])
 
 async def tags_add_lf(db: Database, message: discord.Message, tags: list[str], exclude_tags: list[str]) -> str:
     if len(tags) == 0:
-        user_tags = set([user_tag["tag"] for user_tag in db.user_tags.get(filters={"user_id":message.author.id})])
-        tags = user_tags - set(exclude_tags)
-    return await tag_add_lf(db, message, tags)
+        async def confirm_add(interaction):
+            user_tags = set([user_tag["tag"] for user_tag in db.user_tags.get(filters={"user_id":message.author.id})])
+            tags = user_tags - set(exclude_tags)
+            await interaction.response.edit_message(
+                embed=discord.Embed(
+                    description=f"✅ All tags added to your search!",
+                    color=discord.Color.green()
+                ),
+                view=None
+            )
+            await tag_add_lf(db, message, tags)
+
+        async def cancel_add(interaction):
+            await interaction.response.edit_message(
+                embed=discord.Embed(
+                    description=f"❌ No tag added.",
+                    color=discord.Color.red()
+                ),
+                view=None
+            )
+
+        view = ConfirmationView(user=message.author, on_confirm=confirm_add, on_cancel=cancel_add)
+        embed = discord.Embed(
+            title="⚠️ Confirm Tags Addition",
+            description=f"All of your tags will be used to add your liked series.\nAre your sure?",
+            color=discord.Color.orange()
+        )
+        await message.channel.send(embed=embed, view=view)
+        return None
+    else:
+        return await tag_add_lf(db, message, tags)
 
 async def tags_remove_lf(db: Database, message: discord.Message, tags: list[str], exclude_tags: list[str]) -> str:
     if len(tags) == 0:
