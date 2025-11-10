@@ -299,7 +299,7 @@ async def handle_message(db: Database, message: discord.Message):
                 await handle_channel(db, message, commands)
             case "lf":
                 if len(commands) < 2:
-                    await handle_help(message, ["help", "lf"])
+                    await list_lf(db, message)
                     return
                 await handle_lf(db, message, commands)
             case "tagalert" | "ta":
