@@ -6,6 +6,7 @@ from Utils.lf import add_lf, remove_lf, tag_add_lf, tag_remove_lf, tags_add_lf, 
 from Utils.tagalert import tagalert
 from Utils.preferences import preferences_mention, PreferencesResult
 from Utils.burnalert import burnalert
+from Utils.tagseries import add_tagseries, remove_tagseries, TagSeriesResult
 from Config.const import KARUTA_ID
 
 # Constants
@@ -27,6 +28,11 @@ TAGS_LF_COMMANDS = {
 LIKE_LF_COMMANDS = {
     "add": ["Add all series corresponding to the filter you passed. Example: '%attack on titan%' will take every serie containing 'attack on titan'"],
     "remove": ["Remove all series corresponding to the filter you passed. Example: '%attack on titan%' will remove every serie containing 'attack on titan'"],
+}
+
+TS_COMMANDS = {
+    "add": ["Add an association to bound a series to a tag."],
+    "remove": ["Remove an association to remove a bound of a series to a tag."],
 }
 
 LF_COMMANDS = {
@@ -55,6 +61,7 @@ COMMANDS = {
     "tagalert": ["Alert users looking for a card which is in your tag {tag}"],
     "preferences": ["Manage your preferences", PREFERENCES_COMMANDS],
     "burnalert": ["Displays cards that shouldn't be burnt from your tag {tag}"],
+    "tagseries": ["Manage your tag: series associations for the tagcheck command", TS_COMMANDS],
 }
 
 
@@ -279,6 +286,19 @@ async def handle_burnalert(db: Database, message: discord.Message, commands: lis
 
     await burnalert(db, message, tag, wl_throttle=w, print_throttle=p)
 
+async def handle_tagseries(db: Database, message: discord.Message, commands: list[str]):
+    tag = commands[2]
+    series = ""
+    if len(commands) > 3:
+        series = " ".join(commands[3:])
+    match commands[1].lower():
+        case "add" | "a":
+            await add_tagseries(db, message, tag, series)
+        case "remove" | "rm" | "r":
+            await remove_tagseries(db, message, tag, series)
+        case _:
+            await send_message(message.channel, "Unknown tag series subcommand.")
+
 async def handle_message(db: Database, message: discord.Message):
     
     found_prefix = PREFIX.search(message.content)
@@ -317,3 +337,10 @@ async def handle_message(db: Database, message: discord.Message):
                     await handle_help(message, ["help", "burnalert"])
                     return
                 await handle_burnalert(db, message, commands)
+            case "tagseries" | "ts":
+                if len(commands) < 3:
+                    await handle_help(message, ["help", "tagseries"])
+                    return
+                await handle_tagseries(db, message, commands)
+            case "ty" | "thx" | "thankyou" | "thanks" | "easter" | "easteregg":
+                await send_message(message.channel, "https://paypal.me/plheyeroff")

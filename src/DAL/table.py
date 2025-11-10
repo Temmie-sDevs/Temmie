@@ -23,13 +23,23 @@ class Table:
         self.cursor.execute(query, values)
         self.db.connection.commit()
 
-    def get(self, filters=None, in_filters=None):
+    def get(self, filters=None, in_filters=None, select=None, distinct=False):
         """
         filters: exact match {column: value}
         in_filters: {column: [value1, value2, ...]}
         """
         filters = filters or {}
         in_filters = in_filters or {}
+        if select:
+            if isinstance(select, (list, tuple)):
+                select_clause = ", ".join(select)
+            else:
+                select_clause = select
+        else:
+            select_clause = "*"
+
+        if distinct:
+            select_clause = f"DISTINCT {select_clause}"
 
         where_clauses = []
         values = []
@@ -39,12 +49,13 @@ class Table:
             values.append(val)
 
         for col, val_list in in_filters.items():
-            placeholders = ",".join(["?"] * len(val_list))
-            where_clauses.append(f"{col} IN ({placeholders})")
-            values.extend(val_list)
+            if val_list:
+                placeholders = ",".join(["?"] * len(val_list))
+                where_clauses.append(f"{col} IN ({placeholders})")
+                values.extend(val_list)
 
         where_clause = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
-        query = f"SELECT * FROM {self.table_name}{where_clause}"
+        query = f"SELECT {select_clause} FROM {self.table_name}{where_clause}"
         self.cursor.execute(query, tuple(values))
         return self.cursor.fetchall()
     

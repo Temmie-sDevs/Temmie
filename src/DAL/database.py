@@ -6,6 +6,7 @@ from .series import Series
 from .series_alias import SeriesAlias
 from .user_tags import UserTags
 from .user import User
+from .tag_series import TagSeries
 
 class Database:
     def __init__(self, db_path):
@@ -17,6 +18,7 @@ class Database:
         self.serieAliases = SeriesAlias(self.connection)
         self.users = User(self.connection)
         self.user_tags = UserTags(self.connection)
+        self.tag_series = TagSeries(self.connection)
         self.connection.commit_database()
 
     def close_database(self):
