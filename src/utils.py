@@ -77,5 +77,5 @@ async def send_chunked_list(channel, title: str, cards: list[str], footer: str, 
     """Send a message in chunks of 200 cards max, keeping the same style."""
     for i in range(0, len(cards), chunk_size):
         chunk = cards[i:i+chunk_size]
-        text = f"**{title}**\n```{cards_text_prefix}{', '.join(chunk)}```{footer}"
+        text = f"**{title}**\n```{cards_text_prefix}{','.join(chunk)}```{footer}"
         await send_message(channel, text)
