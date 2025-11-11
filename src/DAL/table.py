@@ -66,7 +66,10 @@ class Table:
         for col, val_list in in_filters.items():
             if val_list:
                 placeholders = ",".join(["?"] * len(val_list))
-                where_clauses.append(f"LOWER({col}) IN ({placeholders})")
+                if isinstance(val_list[0], str):
+                    where_clauses.append(f"LOWER({col}) IN ({placeholders})")
+                else:
+                    where_clauses.append(f"{col} IN ({placeholders})")
                 values.extend(val_list)
 
         where_clause = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ""

@@ -25,10 +25,16 @@ async def prepare_text_message(channel: discord.TextChannel, merged: list[LFDto]
         if not dto.users or not dto.cards or author_id in dto.users:
             continue
 
-        users_list = [
-            f"<@{uid}>" if users_info[uid]["mention"] else users_info[uid]["username"]
-            for uid in dto.users if uid in users_info
-        ]
+        users_list = []
+        for uid in dto.users:
+            if uid in users_info:
+                if users_info[uid]["mention"]:
+                    users_list.append(f"<@{uid}>")
+                else:
+                    users_list.append(users_info[uid]["username"])
+            elif len(dto.users) > 1 and uid == -1:
+                users_list.append(f"and some others")
+
         if not users_list:
             continue
 
@@ -84,7 +90,7 @@ async def prepare_text_message(channel: discord.TextChannel, merged: list[LFDto]
     if not message_sent:
         await channel.send("No one is looking for your cards.")
 
-async def tagalert(db: Database, message: discord.Message, tag: str) -> str:
+async def tagalert(db: Database, message: discord.Message, tag: str, specific_users: set[int] = None) -> str:
     guild_member_ids = {member.id for member in message.guild.members}
     cards = db.cards.get(filters={"user_id": message.author.id, "tag": tag})[:MAX_TA_CARDS]
 
@@ -107,7 +113,10 @@ async def tagalert(db: Database, message: discord.Message, tag: str) -> str:
         key = lf["series_name"].lower()
         if key in series_map:
             dto = series_map[key]
-            dto.users.add(lf["user_id"])
+            if specific_users and lf["user_id"] not in specific_users:
+                dto.users.add(-1)
+            else:
+                dto.users.add(lf["user_id"])
 
     merged_map: dict[tuple[int, ...], LFDto] = {}
     for dto in series_map.values():

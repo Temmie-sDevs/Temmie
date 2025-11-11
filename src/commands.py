@@ -245,7 +245,25 @@ async def handle_lf(db: Database, message: discord.Message, commands: list[str])
 
 async def handle_tagalert(db: Database, message: discord.Message, commands: list[str]):
     tag = commands[1]
-    await tagalert(db, message, tag)
+    if len(commands) < 3:
+        user_inputs = []
+    else:
+        raw_users = commands[2].split(",")
+        user_inputs = [u.strip() for u in raw_users if u.strip()]
+
+    discord_user_ids = []
+    for u in user_inputs:
+        match = re.match(r"<@!?(\d+)>", u)
+        if match:
+            user_id = int(match.group(1))
+            discord_user_ids.append(user_id)
+            continue
+
+        for member in message.guild.members:
+            if member.name.lower().startswith(u.lower()):
+                discord_user_ids.append(member.id)
+                break
+    await tagalert(db, message, tag, discord_user_ids)
 
 async def handle_preferences(db: Database, message: discord.Message, commands: list[str]):
     messageToSend = ""
