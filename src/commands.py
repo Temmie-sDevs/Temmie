@@ -307,10 +307,21 @@ async def handle_tagseries(db: Database, message: discord.Message, commands: lis
             await send_message(message.channel, "Unknown tag series subcommand.")
 
 async def handle_tagcheck(db: Database, message: discord.Message, commands: list[str]):
+    raw_args = " ".join(commands[2:]).strip()
+    exclude_tags = set()
+
+    if raw_args:
+        # Split by space, then handle "except:" or "e:"
+        for part in raw_args.split():
+            part = part.strip()
+            if part.lower().startswith(("except:", "e:", "e=")):
+                sep_index = part.find(":") if ":" in part else part.find("=")
+                values_str = part[sep_index+1:].strip()
+                exclude_tags.update({v.strip() for v in values_str.split(",") if v.strip()})
     if len(commands) > 1:
-        await tagcheck(db, message, commands[1])
+        await tagcheck(db, message, commands[1], exclude_tags)
     else:
-        await tagcheck(db, message, None)
+        await tagcheck(db, message, None, exclude_tags)
 
 async def handle_message(db: Database, message: discord.Message):
     

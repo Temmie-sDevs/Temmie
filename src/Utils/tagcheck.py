@@ -82,7 +82,7 @@ async def remove_tagseries(db: Database, message: discord.Message, tag: str, ser
         and_others += f"**and {len(series_removed) - 10} others**"
     await message.channel.send(f":white_check_mark: Series:\n```{series_text}```\n{and_others} bound removed from tag: `{tag}`")
 
-async def tagcheck(db: Database, message: discord.Message, tag: str):
+async def tagcheck(db: Database, message: discord.Message, tag: str, exclude_tags: set):
     user_id = message.author.id
     message_sent = False
 
@@ -92,15 +92,19 @@ async def tagcheck(db: Database, message: discord.Message, tag: str):
     for r in ts_rows:
         s = r["series"]
         t = r["tag"]
+        if t in exclude_tags:
+            continue
         series_to_tags.setdefault(s, set()).add(t)
         registered_tags.add(r["tag"])
         
     if tag:
         registered_tags = [tag]
 
+    exclude_list = list(exclude_tags)
+    placeholders = ",".join(["?"] * len(exclude_list)) if exclude_list else None
     cardsToMove: dict[str, set[str]] = {}
     for tag in registered_tags:
-        query = """
+        query = f"""
             SELECT c.code, c.series
             FROM card c
             LEFT JOIN tag_series ts
@@ -109,10 +113,11 @@ async def tagcheck(db: Database, message: discord.Message, tag: str):
                 AND ts.tag = c.tag
             WHERE c.user_id = ?
                 AND c.tag = ?
+                {"AND c.tag NOT IN (" + placeholders + ")" if placeholders else ""}
                 AND ts.series IS NULL;
         """
-        params = (user_id, tag)
-        db.connection.cursor.execute(query, params)
+        params = [user_id, tag] + exclude_list
+        db.connection.cursor.execute(query, tuple(params))
         cards = db.connection.cursor.fetchall()
 
         for card in cards:
@@ -125,7 +130,7 @@ async def tagcheck(db: Database, message: discord.Message, tag: str):
                 cardsToMove.setdefault("ut", set()).add(code)
 
         # To be more optimized, we do a real sql query here. The get method abstraction would require too much refactor and would become too complicated to handle this
-        query2 = """
+        query2 = f"""
             SELECT c.code
             FROM card c
             JOIN tag_series ts
@@ -133,9 +138,10 @@ async def tagcheck(db: Database, message: discord.Message, tag: str):
                 AND c.series = ts.series
             WHERE c.user_id = ?
             AND ts.tag = ?
-            AND c.tag != ts.tag;
+            AND c.tag != ts.tag
+            {"AND c.tag NOT IN (" + placeholders + ")" if placeholders else ""};
         """
-        db.connection.cursor.execute(query2, params)
+        db.connection.cursor.execute(query2, tuple(params))
         cards = db.connection.cursor.fetchall()
         for card in cards:
             cardsToMove.setdefault(tag, set()).add(card["code"])
@@ -196,5 +202,3 @@ async def list_tag_series(db: Database, message: discord.Message, username: str 
     embed = paginator.get_page_content()
 
     await message.channel.send(embed=embed, view=paginator)
-
-# TODO except for tagcheck, like i want to check tags but do not care about except
