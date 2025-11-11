@@ -6,7 +6,7 @@ from Utils.lf import add_lf, remove_lf, tag_add_lf, tag_remove_lf, tags_add_lf, 
 from Utils.tagalert import tagalert
 from Utils.preferences import preferences_mention, PreferencesResult
 from Utils.burnalert import burnalert
-from Utils.tagcheck import add_tagseries, remove_tagseries, tagcheck
+from Utils.tagcheck import add_tagseries, remove_tagseries, tagcheck, list_tag_series
 from Config.const import KARUTA_ID
 
 # Constants
@@ -33,6 +33,7 @@ LIKE_LF_COMMANDS = {
 TS_COMMANDS = {
     "add": ["Add an association to bound a series to a tag."],
     "remove": ["Remove an association to remove a bound of a series to a tag."],
+    "list": ["Lists all tag/series associations of an user"],
 }
 
 LF_COMMANDS = {
@@ -297,6 +298,11 @@ async def handle_tagseries(db: Database, message: discord.Message, commands: lis
             await add_tagseries(db, message, tag, series)
         case "remove" | "rm" | "r":
             await remove_tagseries(db, message, tag, series)
+        case "list" | "l":
+            if len(commands) > 2:
+                await list_tag_series(db, message, commands[2])
+            else:
+                await list_tag_series(db, message)
         case _:
             await send_message(message.channel, "Unknown tag series subcommand.")
 
@@ -345,7 +351,10 @@ async def handle_message(db: Database, message: discord.Message):
                     return
                 await handle_burnalert(db, message, commands)
             case "tagseries" | "ts":
-                if len(commands) < 3:
+                if len(commands) == 1:
+                    await list_tag_series(db, message)
+                    return
+                if len(commands) == 2:
                     await handle_help(message, ["help", "tagseries"])
                     return
                 await handle_tagseries(db, message, commands)

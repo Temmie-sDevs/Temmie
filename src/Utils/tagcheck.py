@@ -4,6 +4,7 @@ import discord
 from DAL.database import Database
 import logging
 from utils import send_chunked_list
+from Utils.paginator import Paginator
 
 MAX_CARDS_TAG = 50
 
@@ -148,7 +149,53 @@ async def tagcheck(db: Database, message: discord.Message, tag: str):
     if not message_sent:
         await message.channel.send("Your cards are already well organized!")
 
+    
+async def list_tag_series(db: Database, message: discord.Message, username: str = ""):
+    guild = message.guild
+    target_user = None
+    
+    if message.mentions:
+        target_user = message.mentions[0]
+    elif username:
+        username = username.strip().lower()
 
-# TODO List tagseries
+        # Try exact match (case-insensitive)
+        for member in guild.members:
+            if member.name.lower() == username or member.display_name.lower() == username:
+                target_user = member
+                break
+
+        # If not found, try "starts with"
+        if not target_user:
+            for member in guild.members:
+                if member.name.lower().startswith(username) or member.display_name.lower().startswith(username):
+                    target_user = member
+                    break
+        # If still not found, notify
+        if not target_user:
+            await message.channel.send(f"❌ No user found in this server matching '{username}'.")
+            return
+    else:
+        target_user = message.author
+
+    # Search the user based on the whole username should match with the user name, then if not found, try to find a user starting with username.
+    if not (tagseries := db.tag_series.get(filters={"user_id": target_user.id})):
+        if target_user.id == message.author.id:
+            await message.channel.send("You have no tag/series association.")
+        else:
+            await message.channel.send(f"{target_user.display_name} has no tag/series association.")
+        return
+    
+    tagseries = sorted({f"{ts["tag"]} -> {ts["series"]}" for ts in tagseries})
+    title = ""
+    if target_user.id == message.author.id:
+        title = f"⭐ Your Tag/Series associations"
+    else:
+        title = f"⭐ Tag/Series associations of {target_user.display_name}"
+    paginator = Paginator(tagseries, title=title, per_page=10)
+    embed = paginator.get_page_content()
+
+    await message.channel.send(embed=embed, view=paginator)
+
 # TODO except for tagcheck, like i want to check tags but do not care about except
 # Set emojis to boud remove, ... to know easily
