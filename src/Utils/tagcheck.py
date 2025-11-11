@@ -15,13 +15,13 @@ async def add_tagseries(db: Database, message: discord.Message, tag: str, series
     series = series.lower()
     if series:
         if not db.series.get(filters={"name": series}):
-            await message.channel.send(f"Series `{series}` has not been found.")
+            await message.channel.send(f":x: Series `{series}` has not been found.")
             return
         if db.tag_series.get(filters={"user_id": user_id, "tag": tag, "series": series}):
-            await message.channel.send(f"Series `{series}` is already bound to the tag: `{tag}`.")    
+            await message.channel.send(f":x: Series `{series}` is already bound to the tag: `{tag}`.")    
             return    
         db.tag_series.insert({"user_id": user_id, "tag": tag, "series": series})
-        await message.channel.send(f"Series `{series}` has been bound to the tag: `{tag}`.")
+        await message.channel.send(f":white_check_mark: Series `{series}` has been bound to the tag: `{tag}`.")
         return
 
     series = db.cards.get(filters={"user_id": user_id, "tag": tag}, select=["series"], distinct=True)
@@ -36,7 +36,7 @@ async def add_tagseries(db: Database, message: discord.Message, tag: str, series
         series_added.add(series_name)
 
     if len(series_added) == 0:
-        await message.channel.send(f"No series bounded to the tag: `{tag}`")
+        await message.channel.send(f":grey_exclamation: No series bounded to the tag: `{tag}`")
         return
     
     first_series = list(series_added)[:10]
@@ -44,20 +44,20 @@ async def add_tagseries(db: Database, message: discord.Message, tag: str, series
     and_others = ""
     if len(series_added) > 10:
         and_others += f"**and {len(series_added) - 10} others**"
-    await message.channel.send(f"Series:\n```{series_text}```\n{and_others} bounded to tag:`{tag}`")
+    await message.channel.send(f":white_check_mark: Series:\n```{series_text}```\n{and_others} bounded to tag:`{tag}`")
 
 async def remove_tagseries(db: Database, message: discord.Message, tag: str, series: str) -> str:
     user_id = message.author.id
     series = series.lower()
     if series:
         if not db.series.get(filters={"name": series}):
-            await message.channel.send(f"Series `{series}` has not been found.")
+            await message.channel.send(f":x: Series `{series}` has not been found.")
             return
         if not db.tag_series.get(filters={"user_id": user_id, "tag": tag, "series": series}):
-            await message.channel.send(f"Series `{series}` is not bound to the tag: `{tag}`.")
+            await message.channel.send(f":x: Series `{series}` is not bound to the tag: `{tag}`.")
             return
         db.tag_series.delete(user_id = user_id, tag = tag, series = series)
-        await message.channel.send(f"Series `{series}` bound to the tag: `{tag}` has been removed.")
+        await message.channel.send(f":white_check_mark: Series `{series}` bound to the tag: `{tag}` has been removed.")
         return
         
     series = db.cards.get(filters={"user_id": user_id, "tag": tag}, select=["series"], distinct=True)
@@ -72,7 +72,7 @@ async def remove_tagseries(db: Database, message: discord.Message, tag: str, ser
         series_removed.add(series_name)
         
     if len(series_removed) == 0:
-        await message.channel.send(f"No series bound removed from the tag: `{tag}`")
+        await message.channel.send(f":grey_exclamation: No series bound removed from the tag: `{tag}`")
         return
     
     first_series = list(series_removed)[:10]
@@ -80,7 +80,7 @@ async def remove_tagseries(db: Database, message: discord.Message, tag: str, ser
     and_others = ""
     if len(series_removed) > 10:
         and_others += f"**and {len(series_removed) - 10} others**"
-    await message.channel.send(f"Series:\n```{series_text}```\n{and_others} bound removed from tag: `{tag}`")
+    await message.channel.send(f":white_check_mark: Series:\n```{series_text}```\n{and_others} bound removed from tag: `{tag}`")
 
 async def tagcheck(db: Database, message: discord.Message, tag: str):
     user_id = message.author.id
@@ -198,4 +198,3 @@ async def list_tag_series(db: Database, message: discord.Message, username: str 
     await message.channel.send(embed=embed, view=paginator)
 
 # TODO except for tagcheck, like i want to check tags but do not care about except
-# Set emojis to boud remove, ... to know easily
