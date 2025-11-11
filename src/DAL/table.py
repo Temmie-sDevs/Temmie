@@ -13,14 +13,26 @@ class Table:
         self.cursor.execute(query, values)
         self.db.connection.commit()
 
-    def delete(self, **kwargs):
+    def delete(self, **filters):
         """
         kwargs = {pk_col: value}
         """
-        where_clause = " AND ".join([f"{col}=?" for col in kwargs.keys()])
-        values = tuple(kwargs.values())
+        if not filters:
+            raise ValueError("No filters provided for delete().")
+
+        where_clauses = []
+        values = []
+
+        for col, val in filters.items():
+            if isinstance(val, str):
+                where_clauses.append(f"LOWER({col}) = LOWER(?)")
+            else:
+                where_clauses.append(f"{col} = ?")
+            values.append(val)
+        where_clause = " AND ".join(where_clauses)
         query = f"DELETE FROM {self.table_name} WHERE {where_clause}"
-        self.cursor.execute(query, values)
+
+        self.cursor.execute(query, tuple(values))
         self.db.connection.commit()
 
     def get(self, filters=None, in_filters=None, select=None, distinct=False):
@@ -45,13 +57,16 @@ class Table:
         values = []
 
         for col, val in filters.items():
-            where_clauses.append(f"{col}=?")
+            if isinstance(val, str):
+                where_clauses.append(f"LOWER({col}) = LOWER(?)")
+            else:
+                where_clauses.append(f"{col} = ?")
             values.append(val)
 
         for col, val_list in in_filters.items():
             if val_list:
                 placeholders = ",".join(["?"] * len(val_list))
-                where_clauses.append(f"{col} IN ({placeholders})")
+                where_clauses.append(f"LOWER({col}) IN ({placeholders})")
                 values.extend(val_list)
 
         where_clause = f" WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
@@ -65,19 +80,22 @@ class Table:
 
         Example:
             update({"username": "JohnDoe"}, id=123)
-
-        data: dict -> columns to update
-        filters: dict -> columns to filter on (WHERE)
         """
         if not data:
-            raise ValueError("No data provided for update.")
+            raise ValueError("No data provided for update().")
 
         set_clause = ", ".join([f"{col}=?" for col in data.keys()])
         values = list(data.values())
 
         if filters:
-            where_clause = " AND ".join([f"{col}=?" for col in filters.keys()])
-            values.extend(filters.values())
+            where_clauses = []
+            for col, val in filters.items():
+                if isinstance(val, str):
+                    where_clauses.append(f"LOWER({col}) = LOWER(?)")
+                else:
+                    where_clauses.append(f"{col} = ?")
+                values.append(val)
+            where_clause = " AND ".join(where_clauses)
             query = f"UPDATE {self.table_name} SET {set_clause} WHERE {where_clause}"
         else:
             query = f"UPDATE {self.table_name} SET {set_clause}"
@@ -88,16 +106,25 @@ class Table:
     def count(self, **filters) -> int:
         """
         Returns the number of rows in the table.
-        
+
         Example:
             count()  -> total rows
             count(user_id=123)  -> rows matching user_id=123
         """
         if filters:
-            where_clause = " AND ".join([f"{col}=?" for col in filters.keys()])
-            values = tuple(filters.values())
+            where_clauses = []
+            values = []
+
+            for col, val in filters.items():
+                if isinstance(val, str):
+                    where_clauses.append(f"LOWER({col}) = LOWER(?)")
+                else:
+                    where_clauses.append(f"{col} = ?")
+                values.append(val)
+
+            where_clause = " AND ".join(where_clauses)
             query = f"SELECT COUNT(*) FROM {self.table_name} WHERE {where_clause}"
-            self.cursor.execute(query, values)
+            self.cursor.execute(query, tuple(values))
         else:
             query = f"SELECT COUNT(*) FROM {self.table_name}"
             self.cursor.execute(query)

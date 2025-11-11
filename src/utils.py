@@ -72,3 +72,10 @@ def update_collection(db: Database, user_id: int, csv: list[dict]):
     db.user_tags.delete(user_id = user_id)
     for tag in tags:
         db.user_tags.insert({"user_id": user_id, "tag": tag})
+
+async def send_chunked_list(channel, title: str, cards: list[str], footer: str, cards_text_prefix: str = "", chunk_size: int = 200):
+    """Send a message in chunks of 200 cards max, keeping the same style."""
+    for i in range(0, len(cards), chunk_size):
+        chunk = cards[i:i+chunk_size]
+        text = f"**{title}**\n```{cards_text_prefix}{', '.join(chunk)}```{footer}"
+        await send_message(channel, text)

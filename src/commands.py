@@ -6,7 +6,7 @@ from Utils.lf import add_lf, remove_lf, tag_add_lf, tag_remove_lf, tags_add_lf, 
 from Utils.tagalert import tagalert
 from Utils.preferences import preferences_mention, PreferencesResult
 from Utils.burnalert import burnalert
-from Utils.tagseries import add_tagseries, remove_tagseries, TagSeriesResult
+from Utils.tagcheck import add_tagseries, remove_tagseries, tagcheck
 from Config.const import KARUTA_ID
 
 # Constants
@@ -62,6 +62,7 @@ COMMANDS = {
     "preferences": ["Manage your preferences", PREFERENCES_COMMANDS],
     "burnalert": ["Displays cards that shouldn't be burnt from your tag {tag}"],
     "tagseries": ["Manage your tag: series associations for the tagcheck command", TS_COMMANDS],
+    "tagcheck": ["Gives you the list of cards wrongly tagged"],
 }
 
 
@@ -299,6 +300,12 @@ async def handle_tagseries(db: Database, message: discord.Message, commands: lis
         case _:
             await send_message(message.channel, "Unknown tag series subcommand.")
 
+async def handle_tagcheck(db: Database, message: discord.Message, commands: list[str]):
+    if len(commands) > 1:
+        await tagcheck(db, message, commands[1])
+    else:
+        await tagcheck(db, message, None)
+
 async def handle_message(db: Database, message: discord.Message):
     
     found_prefix = PREFIX.search(message.content)
@@ -342,5 +349,7 @@ async def handle_message(db: Database, message: discord.Message):
                     await handle_help(message, ["help", "tagseries"])
                     return
                 await handle_tagseries(db, message, commands)
+            case "tagcheck" | "tc":
+                await handle_tagcheck(db, message, commands)
             case "ty" | "thx" | "thankyou" | "thanks" | "easter" | "easteregg":
                 await send_message(message.channel, "https://paypal.me/plheyeroff")

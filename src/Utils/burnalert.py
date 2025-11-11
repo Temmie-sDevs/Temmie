@@ -3,17 +3,9 @@
 import discord
 from DAL.database import Database
 import logging
-from utils import send_message
+from utils import send_message, send_chunked_list
 
 logging.basicConfig(level=logging.INFO)
-
-async def send_chunked_list(channel, title: str, cards: list[str], footer: str):
-    """Send a message in chunks of 200 cards max, keeping the same style."""
-    CHUNK_SIZE = 200
-    for i in range(0, len(cards), CHUNK_SIZE):
-        chunk = cards[i:i+CHUNK_SIZE]
-        text = f"**{title}**\n```{', '.join(chunk)}```{footer}"
-        await send_message(channel, text)
 
 async def burnalert(db: Database, message: discord.Message, tag: str, wl_throttle: int = 10, print_throttle: int = 1000) -> str:
     cards = db.cards.get(filters={"user_id": message.author.id, "tag": tag})
