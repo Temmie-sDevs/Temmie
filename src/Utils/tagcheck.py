@@ -85,6 +85,7 @@ async def remove_tagseries(db: Database, message: discord.Message, tag: str, ser
 async def tagcheck(db: Database, message: discord.Message, tag: str, exclude_tags: set):
     user_id = message.author.id
     message_sent = False
+    original_tag = ""
 
     ts_rows = db.tag_series.get(filters={"user_id": user_id}, select=["series", "tag"])
     series_to_tags: dict[str, set[str]] = {}
@@ -97,7 +98,12 @@ async def tagcheck(db: Database, message: discord.Message, tag: str, exclude_tag
         series_to_tags.setdefault(s, set()).add(t)
         registered_tags.add(r["tag"])
         
+    if not tag and len(exclude_tags) > 0:
+        tag = "ut"
     if tag:
+        original_tag = tag
+        if tag == "ut":
+            tag = ""
         registered_tags = [tag]
 
     exclude_list = list(exclude_tags)
@@ -147,10 +153,13 @@ async def tagcheck(db: Database, message: discord.Message, tag: str, exclude_tag
             cardsToMove.setdefault(tag, set()).add(card["code"])
 
     if cardsToMove:
+        if original_tag == "ut" and "ut" in cardsToMove:
+            del cardsToMove["ut"]
         for key in sorted(cardsToMove.keys(), key=lambda k: (k == "ut", k.lower())):
             value = cardsToMove[key]
             message_sent = True
-            await send_chunked_list(message.channel, f"**Tag `{key}`**", list(value), "", f"kt {key} ", MAX_CARDS_TAG)
+            command = f"kt {key} " if key != "ut" else "kut "
+            await send_chunked_list(message.channel, f"**Tag `{key}`**", list(value), "", f"{command}", MAX_CARDS_TAG, " ")
 
     if not message_sent:
         await message.channel.send("Your cards are already well organized!")

@@ -324,22 +324,30 @@ async def handle_tagseries(db: Database, message: discord.Message, commands: lis
         case _:
             await send_message(message.channel, "Unknown tag series subcommand.")
 
-async def handle_tagcheck(db: Database, message: discord.Message, commands: list[str]):
-    raw_args = " ".join(commands[2:]).strip()
+def handle_except_tagcheck(commands: list[str], narg: int):
+    raw_args = " ".join(commands[narg:]).strip()
     exclude_tags = set()
 
     if raw_args:
-        # Split by space, then handle "except:" or "e:"
         for part in raw_args.split():
-            part = part.strip()
+            part = part.strip().lower()
             if part.lower().startswith(("except:", "e:", "e=")):
                 sep_index = part.find(":") if ":" in part else part.find("=")
                 values_str = part[sep_index+1:].strip()
                 exclude_tags.update({v.strip() for v in values_str.split(",") if v.strip()})
-    if len(commands) > 1:
-        await tagcheck(db, message, commands[1], exclude_tags)
-    else:
-        await tagcheck(db, message, None, exclude_tags)
+    return exclude_tags
+
+async def handle_tagcheck(db: Database, message: discord.Message, commands: list[str]):
+    if len(commands) == 1:
+        return await tagcheck(db, message, None, set())
+    
+    first_arg = commands[1].strip().lower()
+    if first_arg.startswith(("except:", "e:", "e=")):
+        exclude_tags = handle_except_tagcheck(commands, 1)
+        return await tagcheck(db, message, None, exclude_tags)
+    
+    exclude_tags = handle_except_tagcheck(commands, 2)
+    await tagcheck(db, message, commands[1], exclude_tags)
 
 async def handle_message(db: Database, message: discord.Message):
     
