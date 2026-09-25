@@ -307,14 +307,15 @@ async def handle_burnalert(db: Database, message: discord.Message, commands: lis
     await burnalert(db, message, tag, wl_throttle=w, print_throttle=p)
 
 async def handle_tagseries(db: Database, message: discord.Message, commands: list[str]):
-    tag = commands[2]
     series = ""
     if len(commands) > 3:
         series = " ".join(commands[3:])
     match commands[1].lower():
         case "add" | "a":
+            tag = commands[2]
             await add_tagseries(db, message, tag, series)
         case "remove" | "rm" | "r":
+            tag = commands[2]
             await remove_tagseries(db, message, tag, series)
         case "list" | "l":
             if len(commands) > 2:
@@ -391,7 +392,7 @@ async def handle_message(db: Database, message: discord.Message):
                 if len(commands) == 1:
                     await list_tag_series(db, message)
                     return
-                if len(commands) == 2:
+                if len(commands) == 2 and commands[1].lower() != "list" and commands[1].lower() != "l":
                     await handle_help(message, ["help", "tagseries"])
                     return
                 await handle_tagseries(db, message, commands)

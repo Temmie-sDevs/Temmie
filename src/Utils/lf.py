@@ -113,12 +113,13 @@ async def tag_add_lf(db: Database, message: discord.Message, tags: list[str]) ->
 async def tag_remove_lf(db: Database, message: discord.Message, tags: list[str]) -> str:
     series_removed = set()
     for tag in tags:
-        series_removed.update(await get_series_tag_lf(db, message, tag, False))
+        tag_series, _ = await get_series_tag_lf(db, message, tag, False)
+        series_removed.update(tag_series)
 
     if len(series_removed) == 0:
         return 'No series removed.'
     if len(series_removed) < 50:
-        return f'{', '.join(list(series_removed))} removed from your search.'
+        return f'{', '.join(series_removed)} removed from your search.'
     else:
         return f'{len(series_removed)} series removed from your search'
 
